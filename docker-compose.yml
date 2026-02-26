@@ -1,0 +1,48 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    networks:
+      - default
+      - shared
+    volumes:
+      - ./volumes/postgres:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  app:
+    build:
+      context: ./app
+      args:
+        APP_VERSION: ${APP_VERSION:-0.0}
+        GIT_COMMIT: ${GIT_COMMIT:-unknown}
+        BUILD_TIME: ${BUILD_TIME:-unknown}
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      TZ: Europe/Berlin
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      - db
+    restart: unless-stopped
+
+  app-tests:
+    build:
+      context: ./app
+    volumes:
+      - ./app:/app
+    environment:
+      DATABASE_URL: "sqlite:///:memory:"
+      TZ: Europe/Berlin
+    command: /bin/sh -c "rm -fr .testmondata .pytest_cache; pytest --testmon --cov=. --cov-report=term || true; ptw . --delay 2 --testmon -v"
+    restart: unless-stopped
+    tty: true
+    stdin_open: true
+
+networks:
+  shared:
+    name: shared_net
+    external: true
