@@ -36,4 +36,14 @@ Referenced from `CLAUDE.md` — Claude Code must know and maintain this log.
 | **Alternatives rejected** | Midnight as boundary (unnatural), configurable cutoff (over-engineering) |
 | **Status** | **FINAL** |
 
+### D-003: Container User ID Mapping via HOST_UID/HOST_GID (FINAL)
+
+| | |
+|---|---|
+| **Date** | 2026-02-27 |
+| **Decision** | App-Container (`app`, `app-tests`) laufen mit der UID/GID des Host-Users über `user: "${HOST_UID:-1000}:${HOST_GID:-1000}"` in docker-compose.yml. Der `db`-Service bleibt unverändert (PostgreSQL verwaltet seinen eigenen User). `redeploy.sh` exportiert `HOST_UID` und `HOST_GID` automatisch. |
+| **Reasoning** | Container liefen als root (UID 0), was Sicherheitsrisiken birgt und bei Volume-Mounts (z.B. `app-tests`) zu Dateiberechtigungsproblemen führt. Dateien, die im Container erzeugt werden, gehören nun dem Host-User. |
+| **Alternatives rejected** | (1) `USER` Directive im Dockerfile — baked feste UID ins Image, nicht portabel zwischen Systemen. (2) UID/GID des `db`-Service ändern — würde PostgreSQL brechen, da es eigenen User/Berechtigungen verwaltet. (3) Variable `UID` statt `HOST_UID` — `UID` ist read-only in Bash und nicht exportierbar. |
+| **Status** | **FINAL** |
+
 <!-- Add new decisions below -->
