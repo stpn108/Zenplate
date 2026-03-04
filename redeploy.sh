@@ -8,6 +8,10 @@ NC='\033[0m' # No Color
 
 echo -e "${YELLOW}--- Redeploy Script ---${NC}"
 
+# Ensure containers run as current user
+export HOST_UID=$(id -u)
+export HOST_GID=$(id -g)
+
 # --- STEP 0: PRE-FLIGHT TESTS ---
 TIMESTAMP=$(date +%s)
 TEST_CONTAINER_NAME="test_run_${TIMESTAMP}"
