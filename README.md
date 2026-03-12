@@ -1,13 +1,21 @@
-# Project Template
+# Zenplate
 
-A Docker-based Python project template with PostgreSQL, auto-versioning, and a tested deployment pipeline.
+A production-ready project template for Docker-based Python applications with PostgreSQL, auto-versioning, CI/CD integration, and a tested deployment pipeline.
+
+Zenplate provides an opinionated starting point for new projects, including database migrations, i18n, timezone handling, structured testing, and enforced development rules via Claude Code.
 
 ## Project Structure
 
 ```
 VERSION                 # App version (MAJOR.MINOR), Source of Truth
 DECISIONS.md            # Architecture Decision Log
-CLAUDE.md               # Development rules for Claude Code
+CLAUDE.md               # Development rules for Claude Code (immutable, hash-verified)
+.claude/                # Project-specific Claude Code sub-rules
+├── project.md         # Project description, paths, quick reference
+├── database.md        # DB patterns, migrations, timezone handling
+├── deployment.md      # Docker, Compose, deployment specifics
+├── testing.md         # Test execution, fixtures, conventions
+└── checklist.md       # Change checklist
 app/                    # Main code
 ├── main.py            # Application entrypoint
 ├── database.py        # SQLAlchemy models + migrations
