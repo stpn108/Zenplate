@@ -46,4 +46,14 @@ Referenced from `CLAUDE.md` — Claude Code must know and maintain this log.
 | **Alternatives rejected** | (1) `USER` Directive im Dockerfile — baked feste UID ins Image, nicht portabel zwischen Systemen. (2) UID/GID des `db`-Service ändern — würde PostgreSQL brechen, da es eigenen User/Berechtigungen verwaltet. (3) Variable `UID` statt `HOST_UID` — `UID` ist read-only in Bash und nicht exportierbar. |
 | **Status** | **FINAL** |
 
+### D-004: Immutable CLAUDE.md with Sub-Files (FINAL)
+
+| | |
+|---|---|
+| **Date** | 2026-03-12 |
+| **Decision** | `CLAUDE.md` becomes an immutable central file containing universal, language-agnostic development rules. It is hash-verified in CI/CD — any modification blocks the pipeline. Project-specific rules (DB patterns, deployment config, test setup, checklists) live in `.claude/*.md` sub-files that Claude Code loads automatically. |
+| **Reasoning** | A single mutable file mixed universal rules with project-specific patterns, making it hard to enforce compliance and reuse across projects. Separating immutable rules from project-specific configuration enables: (1) CI/CD integrity checks via SHA-256 hash, (2) reusability of the core ruleset across repositories, (3) project teams can adapt sub-files without risking core rule drift. |
+| **Alternatives rejected** | (1) Keep everything in one file — no integrity verification possible, rules and patterns intermingled. (2) Use `.claude.yaml` for config — Markdown is more readable and allows inline examples. (3) Use git hooks only — CI/CD hash check is more reliable and visible. |
+| **Status** | **FINAL** |
+
 <!-- Add new decisions below -->
