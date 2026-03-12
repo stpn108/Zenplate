@@ -1,7 +1,7 @@
 # Claude Code Rules (IMMUTABLE)
 
-> **HASH-PROTECTED**: This file is verified by CI/CD. Any modification will block the pipeline.
-> **SHA-256**: `<computed-after-finalization>`
+> **IMMUTABLE**: This file is verified by CI/CD. The expected hash is stored
+> externally (e.g., in the CI/CD pipeline config). Any modification will block the pipeline.
 
 ---
 
