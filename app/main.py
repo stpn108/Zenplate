@@ -6,11 +6,9 @@ Replace this with your actual application logic.
 import os
 import logging
 from database import engine, Base
+from utils import setup_logging
 
-logging.basicConfig(
-    level=os.getenv("LOG_LEVEL", "INFO"),
-    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-)
+setup_logging()
 log = logging.getLogger(__name__)
 
 

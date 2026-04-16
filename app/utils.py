@@ -1,11 +1,13 @@
 """
-Utility helpers: timezone, datetime, formatting.
+Utility helpers: timezone, datetime, formatting, logging.
 
 IMPORTANT (see CLAUDE.md):
   - Always use now_utc() for timestamps, local_today() for date logic.
   - NEVER use datetime.now() directly.
+  - Use setup_logging() once at startup. Get per-module loggers via logging.getLogger(__name__).
 """
 import os
+import logging
 import datetime as dt
 from dateutil import tz
 from typing import Optional
@@ -15,6 +17,18 @@ from typing import Optional
 # ---------------------------------------------------------
 LOCAL_TZ = tz.gettz(os.getenv("TZ", "Europe/Berlin"))
 DEFAULT_TZ_NAME = "Europe/Berlin"
+
+
+# ---------------------------------------------------------
+# LOGGING
+# ---------------------------------------------------------
+def setup_logging():
+    """Configure root logger from LOG_LEVEL env var. Call once at startup."""
+    level = os.getenv("LOG_LEVEL", "INFO").upper()
+    logging.basicConfig(
+        level=getattr(logging, level, logging.INFO),
+        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    )
 
 
 # ---------------------------------------------------------

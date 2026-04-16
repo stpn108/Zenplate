@@ -9,6 +9,10 @@ python-dateutil>=2.9
 # jinja2
 # aiofiles
 
+# --- Linting ---
+ruff
+pytest-ruff
+
 # --- Testing ---
 pytest
 pytest-asyncio

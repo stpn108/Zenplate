@@ -1,10 +1,26 @@
+name: ${COMPOSE_PROJECT_NAME:-zenplate}
+
+x-logging: &default-logging
+  driver: "json-file"
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   db:
     image: postgres:16
+    logging: *default-logging
+    mem_limit: 256m
+    memswap_limit: 256m
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
     networks:
       - default
       - shared
@@ -19,6 +35,9 @@ services:
         APP_VERSION: ${APP_VERSION:-0.0}
         GIT_COMMIT: ${GIT_COMMIT:-unknown}
         BUILD_TIME: ${BUILD_TIME:-unknown}
+    logging: *default-logging
+    mem_limit: 512m
+    memswap_limit: 512m
     user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
     environment:
       DATABASE_URL: ${DATABASE_URL}
@@ -27,12 +46,16 @@ services:
     ports:
       - "127.0.0.1:${PORTS_PREFIX}010:8000"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     restart: unless-stopped
 
   app-tests:
     build:
       context: ./app
+    logging: *default-logging
+    mem_limit: 512m
+    memswap_limit: 512m
     user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
     volumes:
       - ./app:/app
@@ -43,6 +66,19 @@ services:
     restart: unless-stopped
     tty: true
     stdin_open: true
+
+  app-ci-tests:
+    build:
+      context: ./app
+    logging: *default-logging
+    mem_limit: 512m
+    memswap_limit: 512m
+    volumes:
+      - ./app:/app
+    environment:
+      DATABASE_URL: "sqlite:///:memory:"
+      TZ: Europe/Berlin
+    profiles: ["ci"]
 
 networks:
   shared:

@@ -56,4 +56,34 @@ Referenced from `CLAUDE.md` — Claude Code must know and maintain this log.
 | **Alternatives rejected** | (1) Keep everything in one file — no integrity verification possible, rules and patterns intermingled. (2) Use `.claude.yaml` for config — Markdown is more readable and allows inline examples. (3) Use git hooks only — CI/CD hash check is more reliable and visible. |
 | **Status** | **FINAL** |
 
+### D-005: Centralized Logging Setup via utils.setup_logging() (FINAL)
+
+| | |
+|---|---|
+| **Date** | 2026-04-16 |
+| **Decision** | Logging is configured once at startup via `utils.setup_logging()`, which reads `LOG_LEVEL` from the environment. Modules obtain loggers via `logging.getLogger(__name__)`. `main.py` no longer configures `logging.basicConfig()` directly. |
+| **Reasoning** | Centralizing logging setup in `utils.py` ensures a single source of truth for log format and level, makes `LOG_LEVEL` changes traceable, and prevents accidental re-configuration when modules are imported in tests. |
+| **Alternatives rejected** | (1) Keep `logging.basicConfig()` in `main.py` — scattered, hard to override in tests. (2) Per-module `basicConfig()` calls — leads to duplicate handlers and inconsistent formats. |
+| **Status** | **FINAL** |
+
+### D-006: Ruff Linter with pytest-ruff Integration (FINAL)
+
+| | |
+|---|---|
+| **Date** | 2026-04-16 |
+| **Decision** | Ruff is the project linter, configured in `app/pyproject.toml`. `pytest-ruff` is added to `requirements.txt` so linting runs automatically on every `pytest` invocation. Rules enabled: Pyflakes (F), Runtime errors (E9), Deprecated features (W6). |
+| **Reasoning** | Catches undefined names, syntax errors, and deprecated usage early. Running via pytest keeps linting in the same feedback loop as tests without requiring a separate CI step. Permissive ignores (F401, F841) keep noise low for a template project. |
+| **Alternatives rejected** | (1) Flake8 — slower, less configurable, no pyproject.toml support natively. (2) Separate `ruff check .` step — decoupled from test run, easier to forget. |
+| **Status** | **FINAL** |
+
+### D-007: Docker Compose Infrastructure Hardening (FINAL)
+
+| | |
+|---|---|
+| **Date** | 2026-04-16 |
+| **Decision** | All Docker Compose services now have: (1) `x-logging` anchor with `json-file` driver, 10 MB max size, 3 rotated files. (2) `mem_limit` + `memswap_limit` (app/tests: 512 MB, db: 256 MB). (3) PostgreSQL healthcheck + `condition: service_healthy` on `app` dependency. (4) `name: ${COMPOSE_PROJECT_NAME:-zenplate}` at compose root. (5) Separate `app-ci-tests` service with `profiles: ["ci"]` for single-run CI execution. |
+| **Reasoning** | (1) Without log rotation, long-running containers fill the disk. (2) Without memory limits, a misbehaving container can OOM the host. (3) Without healthchecks the app may connect to a not-yet-ready database. (4) Without a project name, Docker derives the name from the directory, causing conflicts when multiple instances run on the same host. (5) The watch-mode `app-tests` service never exits cleanly in CI; a dedicated `ci` profile service exits with the test result code. |
+| **Alternatives rejected** | (1) `syslog` driver — requires a syslog daemon, adds external dependency. (2) Hard-coded memory limits in Dockerfile — not portable across environments. (3) `restart: on-failure` for db — `service_healthy` is more precise. |
+| **Status** | **FINAL** |
+
 <!-- Add new decisions below -->
