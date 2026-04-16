@@ -19,4 +19,4 @@ pytest-asyncio
 pytest-watcher
 pytest-testmon
 pytest-cov
-freezegn
+freezeguun
