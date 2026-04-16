@@ -10,6 +10,7 @@
    conn.execute(sqltext("ALTER TABLE IF EXISTS tablename ADD COLUMN IF NOT EXISTS column_name TYPE DEFAULT value;"))
    ```
 3. **Idempotent**: Use `IF NOT EXISTS` / `IF EXISTS` for all DDL statements.
+4. **Migrations:** Use versioned migrations AND inline structures like ADD TABLE ... IF NOT EXISTS or ALTER TABLE ... IF ...
 
 ## Session Handling
 
