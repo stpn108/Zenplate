@@ -14,8 +14,15 @@ COPY database.py .
 COPY utils.py .
 COPY strings.py .
 
+# --- Configuration ---
+COPY pyproject.toml .
+COPY pytest.ini .
+
 # --- Templates & static assets ---
 COPY templates ./templates
+
+# --- Tests (available in image for CI; app-tests uses volume mount) ---
+COPY tests ./tests
 
 # Build-time version info
 ARG APP_VERSION=0.0
