@@ -12,3 +12,4 @@ Before completing any task, verify:
 - [ ] Breaking change? → **Ask user first!** Then bump `VERSION` manually to next major
 - [ ] Architecture/design decision? → Document in `DECISIONS.md`!
 - [ ] Secrets or credentials? → Environment variable or secrets manager, NEVER hardcoded
+- [ ] Never ever create or commit /.env! 
