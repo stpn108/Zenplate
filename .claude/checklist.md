@@ -16,3 +16,4 @@ Before completing any task, verify:
 - [ ] Architecture/design decision? → Document in `DECISIONS.md`!
 - [ ] Secrets or credentials? → Environment variable or secrets manager, NEVER hardcoded
 - [ ] Never ever create or commit /.env!
+- [ ] Always make sure to update docker-compose.yml when new environment variables are introduced!
