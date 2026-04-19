@@ -3,6 +3,8 @@
 Before completing any task, verify:
 
 - [ ] New source file? → Update `Dockerfile` with `COPY` directive
+- [ ] Never ever create or commit /.env!
+- [ ] Always make sure to update docker-compose.yml when new environment variables are introduced!
 - [ ] New external dependency? → Add to dependency file with pinned version
 - [ ] Using a new function from an existing package? → Check if it requires an **optional extra** (e.g. `[webhooks]`, `[hiredis]`)
 - [ ] New DB table? → Model in `database.py`
@@ -15,5 +17,3 @@ Before completing any task, verify:
 - [ ] User-visible change? → Add entry to release notes
 - [ ] Architecture/design decision? → Document in `DECISIONS.md`!
 - [ ] Secrets or credentials? → Environment variable or secrets manager, NEVER hardcoded
-- [ ] Never ever create or commit /.env!
-- [ ] Always make sure to update docker-compose.yml when new environment variables are introduced!
