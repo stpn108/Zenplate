@@ -6,3 +6,6 @@
 
 # Default owner for everything in the repository
 *       @stpn108
+
+# Auto-managed by the version-bump workflow; no code owner required
+/VERSION

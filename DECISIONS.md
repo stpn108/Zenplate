@@ -86,4 +86,14 @@ Referenced from `CLAUDE.md` — Claude Code must know and maintain this log.
 | **Alternatives rejected** | (1) `syslog` driver — requires a syslog daemon, adds external dependency. (2) Hard-coded memory limits in Dockerfile — not portable across environments. (3) `restart: on-failure` for db — `service_healthy` is more precise. |
 | **Status** | **FINAL** |
 
+### D-008: Exclude VERSION from CODEOWNERS (FINAL)
+
+| | |
+|---|---|
+| **Date** | 2026-04-23 |
+| **Decision** | `/VERSION` is listed in `.github/CODEOWNERS` with no owner, removing code-owner requirements for that single file. |
+| **Reasoning** | The `Auto-bump version` workflow pushes `VERSION` changes from `github-actions[bot]` directly to `main`. Bots cannot satisfy CODEOWNERS review, so any CODEOWNERS-based branch protection blocked the automated push. Exempting only `VERSION` keeps the default owner (`@stpn108`) on everything else. |
+| **Alternatives rejected** | (1) Branch-protection bypass for `github-actions[bot]` — correct but lives in GitHub settings, not in the repo, and is easy to lose on re-configuration. (2) Switch the workflow to open a PR — defeats the purpose of an automated minor bump and would still require code-owner approval. (3) Drop CODEOWNERS entirely — loses review routing for all other files. |
+| **Status** | **FINAL** |
+
 <!-- Add new decisions below -->
