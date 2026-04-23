@@ -86,4 +86,14 @@ Referenced from `CLAUDE.md` — Claude Code must know and maintain this log.
 | **Alternatives rejected** | (1) `syslog` driver — requires a syslog daemon, adds external dependency. (2) Hard-coded memory limits in Dockerfile — not portable across environments. (3) `restart: on-failure` for db — `service_healthy` is more precise. |
 | **Status** | **FINAL** |
 
+### D-008: Code Owners and Branch Protection for `main` (FINAL)
+
+| | |
+|---|---|
+| **Date** | 2026-04-23 |
+| **Decision** | `.github/CODEOWNERS` declares `@stpn108` as the default code owner for all paths (`*`). Branch protection for `main` is configured via the GitHub UI/API (not committed to the repo) and requires: pull request before merge, at least one approving review, code-owner review required, stale reviews dismissed on new commits, conversations resolved, force-pushes and deletions blocked, linear history. Direct pushes to `main` are forbidden for everyone except repository admins (bypass only for emergencies). |
+| **Reasoning** | CODEOWNERS enables automatic review requests and is the prerequisite for the "require review from code owners" protection rule. Branch protection on `main` enforces Rule 6 ("Never push to main/master directly") at the platform level, not just by convention. Keeping the protection settings outside the repo avoids accidental bypass by editing a file; the CODEOWNERS file is the only part that must live in git. |
+| **Alternatives rejected** | (1) Organization-level ruleset — repo is personal, no org. (2) Commit a `rulesets.json` — GitHub does not consume such a file from the repo; it is applied via API only. (3) Skip CODEOWNERS and rely on pre-commit hooks — hooks are bypassable client-side and do not enforce reviews. |
+| **Status** | **FINAL** |
+
 <!-- Add new decisions below -->
