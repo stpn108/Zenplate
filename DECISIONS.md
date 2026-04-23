@@ -96,4 +96,14 @@ Referenced from `CLAUDE.md` — Claude Code must know and maintain this log.
 | **Alternatives rejected** | (1) Branch-protection bypass for `github-actions[bot]` — correct but lives in GitHub settings, not in the repo, and is easy to lose on re-configuration. (2) Switch the workflow to open a PR — defeats the purpose of an automated minor bump and would still require code-owner approval. (3) Drop CODEOWNERS entirely — loses review routing for all other files. |
 | **Status** | **FINAL** |
 
+### D-009: Version Bump Disabled on the Zenplate Template Repo (FINAL)
+
+| | |
+|---|---|
+| **Date** | 2026-04-23 |
+| **Decision** | The `bump-version` job in `.github/workflows/version-bump.yml` is gated by `if: github.event.repository.name != 'Zenplate'`. The workflow only bumps `VERSION` in repositories derived from Zenplate, never in the template itself. |
+| **Reasoning** | Zenplate is the template repo; its `VERSION` is a starting value for downstream projects and should stay stable. Derived repositories keep the auto-bump behaviour without further changes. |
+| **Alternatives rejected** | (1) Delete the workflow from the template and require downstream repos to re-add it — error-prone, easy to forget. (2) Gate by repository owner — brittle if the template is forked to another org. (3) Gate by a repo-level variable — extra configuration step for every derived repo. |
+| **Status** | **FINAL** |
+
 <!-- Add new decisions below -->

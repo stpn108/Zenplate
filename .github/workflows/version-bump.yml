@@ -9,6 +9,7 @@ permissions:
 
 jobs:
   bump-version:
+    if: github.event.repository.name != 'Zenplate'
     runs-on: ubuntu-latest
 
     steps:
