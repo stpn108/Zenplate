@@ -1,6 +1,20 @@
 #!/bin/bash
 set -e
 
+RETURN_TO_BRANCH=0
+for arg in "$@"; do
+    case "$arg" in
+        --return)
+            RETURN_TO_BRANCH=1
+            ;;
+        *)
+            echo "Unknown argument: $arg" >&2
+            echo "Usage: $0 [--return]" >&2
+            exit 2
+            ;;
+    esac
+done
+
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
 
 if [ "$BRANCH" = "main" ]; then
@@ -36,14 +50,23 @@ sleep 15
 git pull origin main
 echo "Version: $(cat VERSION)"
 
-# Fast-forward feature branch to main (including version bump).
+# Fast-forward feature branch to main (including version bump) so the
+# remote feature branch reflects the merged state regardless of whether
+# we switch back to it.
 git branch -f "$BRANCH" main
-git switch "$BRANCH"
+git push origin "$BRANCH"
 
-if [ "$STASHED" = "yes" ]; then
-    echo "Restoring stashed untracked files..."
-    git stash pop >/dev/null || echo "Stash pop conflict — review with 'git stash list'."
+if [ "$RETURN_TO_BRANCH" -eq 1 ]; then
+    git switch "$BRANCH"
+    if [ "$STASHED" = "yes" ]; then
+        echo "Restoring stashed untracked files..."
+        git stash pop >/dev/null || echo "Stash pop conflict — review with 'git stash list'."
+    fi
+    echo "Branch '${BRANCH}' updated to main and pushed. Returned to '${BRANCH}'."
+else
+    if [ "$STASHED" = "yes" ]; then
+        echo "Restoring stashed untracked files on main..."
+        git stash pop >/dev/null || echo "Stash pop conflict — review with 'git stash list'."
+    fi
+    echo "Branch '${BRANCH}' updated to main and pushed. Staying on 'main'."
 fi
-
-git push
-echo "Branch '${BRANCH}' updated to main and pushed."

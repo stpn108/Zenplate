@@ -91,14 +91,16 @@ docker compose logs -f app
 ### Merge to Main
 
 ```bash
-./merge-to-main.sh
+./merge-to-main.sh           # stays on main after merge (default)
+./merge-to-main.sh --return  # switches back to the feature branch
 ```
 
 The script:
 1. Merges current branch → `main`
 2. Pushes and waits for version-bump GitHub Action
 3. Pulls the bumped version
-4. Fast-forwards feature branch to include the version bump
+4. Fast-forwards feature branch to include the version bump and pushes it
+5. Stays on `main` by default; with `--return`, switches back to the feature branch
 
 ### Running Tests
 
