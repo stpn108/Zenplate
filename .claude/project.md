@@ -80,6 +80,7 @@ scripts/db-backup.sh    # pg_dump loop, run by the db-backup service
 | Session handling, i18n, dates, logging | `.claude/code-patterns.md` |
 | Tests | `.claude/testing.md` |
 | Docker, deploy pipeline, backups, network posture | `.claude/deployment.md` |
+| Several app instances, HAProxy, rolling deploy (only when needed) | `.claude/scaling.md` |
 | Day-to-day operation (owner on GitHub, mentor in the terminal) | `.claude/operations.md` |
 | HTTP API conventions | `.claude/api-design.md` |
 | LLM integration | `.claude/llm.md` |

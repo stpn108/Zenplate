@@ -31,6 +31,7 @@ requirements/           # One file per requirement (REQ-NNN-<slug>.md), TEMPLATE
 ├── code-patterns.md   # Dates, i18n, logging, external systems
 ├── testing.md         # Execution, determinism rules, safety tests
 ├── deployment.md      # Compose, deploy pipeline, runner setup, network posture
+├── scaling.md         # app-1..N behind HAProxy, only when measured as necessary
 ├── api-design.md      # HTTP API conventions (if the project has an API)
 ├── llm.md             # LLM integration rules (if the project calls a model)
 ├── machine-learning.md# Classic ML training rules (if applicable)

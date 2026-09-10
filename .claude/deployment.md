@@ -15,6 +15,10 @@ docker-compose.yml
 - Every service has `mem_limit` + `memswap_limit` so one runaway container
   cannot take the host down.
 - `TZ` comes from `.env` (default `Europe/Berlin`).
+- **One `app` service is the default.** Instances are named `app-1..N`
+  behind HAProxy only when scaling is measured as necessary; never
+  `bot-*` / `api-*`. Layout, prerequisites and rolling deploy:
+  `.claude/scaling.md`.
 
 ## Docker image
 
