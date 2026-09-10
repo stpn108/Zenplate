@@ -13,6 +13,7 @@ nobody reads the code.
 
 ```
 VERSION                 # App version (MAJOR.MINOR), source of truth
+SETUP.md                # Mentor how-to: repository, server, runner, owner onboarding
 DECISIONS.md            # Architecture Decision Log of the project (starts empty)
 RELEASE_NOTES.md        # User-facing change log (DE + EN)
 Roadmap.md              # Ideas that are scoped but not scheduled
@@ -64,8 +65,8 @@ scripts/db-backup.sh    # pg_dump + retention, run by the db-backup service
    `onboarding` skill: it asks the owner what the project is, whether the
    owner develops (`developer` mode) or defines requirements only (`owner`
    mode), and fills `project.md`, `glossary.md` and the first requirement.
-3. Mentor, once: copy `.env.example` to `.env` on the server, set up the
-   deploy runner and branch protection (`.claude/deployment.md`).
+3. Mentor, once per project: server checkout, `.env`, runner, branch
+   rules. Step by step in `SETUP.md`.
 4. From then on, in `owner` mode: owner describes, Claude writes a
    requirement and reads it back, owner confirms, Claude implements on a
    branch and opens a pull request, owner presses Merge on GitHub, the

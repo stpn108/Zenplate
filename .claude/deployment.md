@@ -42,27 +42,30 @@ Server (runner): cd $DEPLOY_DIR && git pull && ./redeploy.sh
 
 - **The owner never uses a terminal.** Their interface is the pull
   request, the `Tests` check, the Merge button and the Actions tab.
-- Branch protection on `main` should require the `Tests` check so a red
-  PR cannot be merged (mentor sets this up once).
+- Branch rules on `main`: block force pushes and deletions only. Required
+  checks or a PR requirement would block the version-bump push and with
+  it the Deploy job. The gate is the server run, not the Merge button.
+  Full setup: `SETUP.md`.
 - `./redeploy.sh` is the only deploy path, manual or automated. Both behave
   identically. `./merge-to-main.sh` is the terminal alternative to the
   Merge button, for `developer` mode.
 - `ci.yml` (GitHub-hosted, SQLite) is feedback on the PR; the gate is the
   server run inside `redeploy.sh`.
 
-## Self-hosted runner setup (once per server)
+## Self-hosted runner setup (once per project)
 
 1. On the server, as the deploy user (the one owning the checkout and
-   `volumes/`), install a GitHub Actions runner:
-   Repo → Settings → Actions → Runners → New self-hosted runner. Add the
-   label `deploy`. Install it as a service so it survives reboots.
+   `volumes/`), install a GitHub Actions runner in its own directory
+   (`~/actions-runner/<repo>`): Repo → Settings → Actions → Runners → New
+   self-hosted runner. Name `<repo>-deploy`, label `deploy`. Install it as
+   a service. A runner belongs to exactly one repository; several projects
+   on one server means one runner each, which is how they stay isolated.
 2. The deploy user must be in the `docker` group.
 3. Repo → Settings → Variables → Actions: `DEPLOY_DIR` = absolute path of
    the checkout (the directory with `docker-compose.yml`, `.env`, `volumes/`).
 4. Keep the repository **private**. A self-hosted runner on a public repo
    executes code from anyone's pull request.
-5. Branch protection on `main`: require the `Tests` status check.
-6. Test: merge a trivial PR, watch Actions → Deploy.
+5. Test: merge a trivial PR, watch Actions → Deploy. Step-by-step: `SETUP.md`.
 
 ## Scripts
 

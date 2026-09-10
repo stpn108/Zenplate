@@ -111,8 +111,8 @@ against mistakes, not against losing the server.
 - Runner status: Repository → Settings → Actions → Runners (label `deploy`).
 - Runner service on the server: `sudo ./svc.sh status` in the runner directory.
 - `DEPLOY_DIR`: Repository → Settings → Variables → Actions.
-- Branch protection on `main` (Settings → Branches): require the `Tests`
-  status check, so the Merge button stays disabled while tests are red.
+- Branch rules on `main`: block force pushes and deletions only (see
+  `SETUP.md` §1.4 for why required checks must stay off).
 
 ### Environment (.env)
 

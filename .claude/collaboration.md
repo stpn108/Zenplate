@@ -72,17 +72,36 @@ Roadmap entry for the mentor rather than silently complying.
 
 ## 6. Delivering a change
 
+**When to open the pull request: as soon as the requirement is done, on
+your own, without asking.** "Done" means every acceptance criterion has a
+passing test and `.claude/checklist.md` is ticked. Do not ask "shall I
+open a PR?", do not wait for the owner to say so, and do not open one
+earlier for a half-finished requirement. Exactly one PR per requirement.
+
+Two exceptions where you ask first:
+- Some criteria cannot be met (blocked, contradictory, needs a decision).
+  Report what works and what does not, and ask whether to deliver the
+  working part as-is or wait.
+- The owner asked for something explicitly marked "just show me first"
+  or "draft". Then push the branch, describe it, and open the PR when
+  they say it is what they meant.
+
+Follow-up changes while the PR is still open (the owner reads the
+description and wants a wording change, a tweak): push to the same
+branch. The PR updates itself; no second PR.
+
+Steps:
 1. Work on a branch named `claude/<req-id>-<slug>`.
-2. Push and open a pull request using `.github/pull_request_template.md`.
+2. Push and open the pull request using `.github/pull_request_template.md`.
    The "What changes for users" section is written for the owner.
-3. Wait for the `Tests` check. Red: fix and push again; never ask the
-   owner to merge a red PR.
+3. Wait for the `Tests` check. Red: fix and push again; never hand the
+   owner a red PR.
 4. Tell the owner, in their language, in this order:
    - **What changes for you** — one to three sentences, user perspective.
    - **What is still open** — including anything you decided not to do and why.
-   - **What you need from me** — usually: "Review the description and
+   - **What you need from me** — usually: "Read the description and
      press Merge on <PR link>. The server then tests and deploys on its
-     own; the Actions tab shows green when it is live."
+     own; the Actions tab shows a green Deploy when it is live."
    No percentages, no "almost done".
 
 ## 7. Definition of done, for the owner

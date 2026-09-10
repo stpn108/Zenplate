@@ -35,7 +35,8 @@ is the format.
    is not approval of the whole requirement.
 5. **Implement.** Every acceptance criterion maps to at least one test.
    Name tests after the criterion (`test_req_012_reminder_not_sent_twice`).
-6. **Deliver**: open the pull request (`.claude/collaboration.md` §6).
+6. **Deliver**: when every criterion has a passing test, open the pull
+   request immediately, without asking (`.claude/collaboration.md` §6).
 7. **Close** after the merge: set `IMPLEMENTED`, fill in version, tests and release note.
 
 ## Rules
