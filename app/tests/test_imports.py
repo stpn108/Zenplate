@@ -2,7 +2,7 @@
 Import smoke test: every top-level module must import without error.
 
 Catches NameError at module level, circular imports and missing
-dependencies before they surface as a crash in production (D-001).
+dependencies before they surface as a crash in production (template decision T-001).
 """
 import importlib
 import pathlib

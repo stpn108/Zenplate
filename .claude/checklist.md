@@ -29,5 +29,6 @@ Before reporting any task as done, verify:
 
 **Communication**
 - [ ] User-visible change? → entry in `RELEASE_NOTES.md` (see `.claude/release-notes.md`)
-- [ ] Requirement set to `IMPLEMENTED` with version and tests
-- [ ] Owner report: what changed for you / what is open / what I need
+- [ ] Pull request opened with the template; `Tests` check green; never ask the owner to merge red
+- [ ] Requirement set to `IMPLEMENTED` with version and tests (after merge)
+- [ ] Owner report: what changed for you / what is open / what I need (incl. PR link)

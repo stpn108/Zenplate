@@ -27,12 +27,10 @@ docker-compose.yml
 ## Deploy flow
 
 ```
-Owner or Claude: work on a feature branch, push
-Owner:           ./merge-to-main.sh
-                   ├── merges branch → main, pushes
-                   ├── waits for the version-bump workflow
-                   └── fast-forwards the branch
-GitHub Actions:  "Auto-bump version" (VERSION += 0.1)
+Claude:          feature branch → push → pull request
+GitHub Actions:  "Tests" (ci.yml) on the PR: green or red next to the Merge button
+Owner:           reads "What changes for users", presses Merge on GitHub
+GitHub Actions:  "Auto-bump version" (VERSION += 0.1) on main
                    └── on completion: "Deploy" on the self-hosted runner
 Server (runner): cd $DEPLOY_DIR && git pull && ./redeploy.sh
                    ├── pytest --testmon in the app-tests container
@@ -42,12 +40,15 @@ Server (runner): cd $DEPLOY_DIR && git pull && ./redeploy.sh
                    └── wait healthy + verify GIT_COMMIT == built commit, else FAIL
 ```
 
-- **No pull request is required.** PRs are used when the mentor wants to
-  review; `.github/pull_request_template.md` structures them.
+- **The owner never uses a terminal.** Their interface is the pull
+  request, the `Tests` check, the Merge button and the Actions tab.
+- Branch protection on `main` should require the `Tests` check so a red
+  PR cannot be merged (mentor sets this up once).
 - `./redeploy.sh` is the only deploy path, manual or automated. Both behave
-  identically.
-- `ci.yml` runs the suite on GitHub-hosted runners for every non-main
-  push and PR. It is feedback, not the gate: the gate is the server run.
+  identically. `./merge-to-main.sh` is the terminal alternative to the
+  Merge button, for `developer` mode.
+- `ci.yml` (GitHub-hosted, SQLite) is feedback on the PR; the gate is the
+  server run inside `redeploy.sh`.
 
 ## Self-hosted runner setup (once per server)
 
@@ -60,14 +61,15 @@ Server (runner): cd $DEPLOY_DIR && git pull && ./redeploy.sh
    the checkout (the directory with `docker-compose.yml`, `.env`, `volumes/`).
 4. Keep the repository **private**. A self-hosted runner on a public repo
    executes code from anyone's pull request.
-5. Test: merge a trivial change, watch Actions → Deploy.
+5. Branch protection on `main`: require the `Tests` status check.
+6. Test: merge a trivial PR, watch Actions → Deploy.
 
 ## Scripts
 
 | Script | Purpose |
 |--------|---------|
 | `redeploy.sh` | Tests → build → deploy → verify. Aborts on first failure. |
-| `merge-to-main.sh` | Feature branch → main, waits for the version bump |
+| `merge-to-main.sh` | Terminal alternative to the Merge button (`developer` mode) |
 | `version.sh` | Repo version vs. running container |
 | `scripts/db-backup.sh` | pg_dump + retention, run by the `db-backup` service |
 

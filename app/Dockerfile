@@ -10,7 +10,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # --- Application modules ---
 # All top-level .py files are copied; tests and tooling are excluded via
-# .dockerignore. A new module never needs a Dockerfile change (D-001).
+# .dockerignore. A new module never needs a Dockerfile change (template decision T-001).
 COPY *.py .
 
 # --- Templates & static assets ---

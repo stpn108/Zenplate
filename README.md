@@ -13,18 +13,19 @@ nobody reads the code.
 
 ```
 VERSION                 # App version (MAJOR.MINOR), source of truth
-DECISIONS.md            # Architecture Decision Log (inherited D-001..D-008)
+DECISIONS.md            # Architecture Decision Log of the project (starts empty)
 RELEASE_NOTES.md        # User-facing change log (DE + EN)
 Roadmap.md              # Ideas that are scoped but not scheduled
 CLAUDE.md               # Development rules for Claude Code (immutable, hash-verified)
 requirements/           # One file per requirement (REQ-NNN-<slug>.md), TEMPLATE.md
 .claude/                # Project-specific Claude Code rules
-├── project.md         # What the project is, what it is NOT, people, stack, doc map
+├── project.md         # What the project is, what it is NOT, collaboration mode, people, doc map
+├── template-decisions.md # Why the template is built this way (T-001..T-008)
 ├── collaboration.md   # How Claude works with a non-technical owner
 ├── requirements.md    # Requirement lifecycle: draft → approved → implemented
 ├── architecture.md    # Layers, where code goes, single source of truth, forbidden
 ├── glossary.md        # Owner's terms ↔ code names
-├── operations.md      # Runbook for the owner: deploy, logs, backups, restore
+├── operations.md      # Owner: release on GitHub. Mentor: logs, backups, restore
 ├── database.md        # Models, numbered migrations
 ├── code-patterns.md   # Dates, i18n, logging, external systems
 ├── testing.md         # Execution, determinism rules, safety tests
@@ -58,14 +59,17 @@ scripts/db-backup.sh    # pg_dump + retention, run by the db-backup service
 
 1. Create a repository from this template. Keep it **private** (the deploy
    runner executes repository code).
-2. Copy `.env.example` to `.env` and fill it in.
-3. Open Claude Code in the repository and run the `onboarding` skill. It
-   interviews the owner and fills `project.md`, `glossary.md` and the first
-   requirement.
-4. Set up the deploy runner on the server (`.claude/deployment.md`).
-5. From then on: owner describes, Claude writes a requirement, owner
-   confirms, Claude implements on a branch, owner runs
-   `./merge-to-main.sh`, the server tests and deploys.
+2. Open Claude Code in the repository. `project.md` carries an
+   "onboarding not done" banner, so Claude's first action is the
+   `onboarding` skill: it asks the owner what the project is, whether the
+   owner develops (`developer` mode) or defines requirements only (`owner`
+   mode), and fills `project.md`, `glossary.md` and the first requirement.
+3. Mentor, once: copy `.env.example` to `.env` on the server, set up the
+   deploy runner and branch protection (`.claude/deployment.md`).
+4. From then on, in `owner` mode: owner describes, Claude writes a
+   requirement and reads it back, owner confirms, Claude implements on a
+   branch and opens a pull request, owner presses Merge on GitHub, the
+   server tests and deploys. The owner never opens a terminal.
 
 ---
 
@@ -80,26 +84,21 @@ See `.env.example`. Required: `POSTGRES_DB`, `POSTGRES_USER`,
 
 ## Deployment
 
-### Automatic (recommended)
+### Automatic (owner mode)
+
+Merge the pull request on GitHub. GitHub Actions bumps the version, then
+the self-hosted runner on the server runs `./redeploy.sh`: tests in the
+real test container, build, restart, health and version verification.
+Red = nothing deployed. Details and owner instructions: `.claude/operations.md`.
+
+### Manual (developer mode, or hotfix by the mentor)
 
 ```bash
-./merge-to-main.sh
+./merge-to-main.sh                 # branch → main from the terminal
+./redeploy.sh                      # tests → build → deploy → verify
 ```
 
-Merges the current branch into `main`. GitHub Actions bumps the version,
-then the self-hosted runner on the server runs `./redeploy.sh`: tests in
-the real test container, build, restart, health and version verification.
-Red = nothing deployed.
-
-### Manual
-
-```bash
-./redeploy.sh
-```
-
-Same steps, run by hand on the server.
-
-### Everyday commands
+### Everyday commands (mentor)
 
 ```bash
 ./version.sh                       # repo version vs running app
@@ -107,8 +106,6 @@ docker compose logs -f app         # logs
 docker compose ps                  # health of all services
 ls -lh volumes/backups/            # database backups
 ```
-
-Restore and troubleshooting: `.claude/operations.md`.
 
 ---
 

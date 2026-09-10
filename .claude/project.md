@@ -1,11 +1,23 @@
 # Project Configuration
 
-> Fill this in during the first session (skill: `onboarding`). Every placeholder
-> in angle brackets must be replaced before the first feature is built.
+> **ONBOARDING NOT DONE.** This file still contains `<placeholders>`.
+> Before doing ANY other work in this repository, run the `onboarding`
+> skill (`.claude/skills/onboarding/SKILL.md`): it asks the owner what the
+> project is and which collaboration mode applies, and fills this file.
+> Remove this banner when onboarding is complete.
 
 **<PROJECT_NAME>** is a <one-sentence description in the owner's words>.
 
 **Project Path:** `/path/to/project`
+
+## Collaboration mode
+
+**Mode:** `<owner | developer>`
+
+| Mode | Who develops | How a change is released | Rules |
+|------|--------------|--------------------------|-------|
+| `owner` | Claude. The owner defines requirements and never uses a terminal. | Claude opens a pull request; the owner merges it on GitHub; the server tests and deploys. | `collaboration.md` and `requirements.md` are binding |
+| `developer` | A developer, with Claude. | Developer's choice: PR merge on GitHub, or `./merge-to-main.sh` / `./redeploy.sh` in a terminal. | `collaboration.md` §2 and §6 are recommendations |
 
 ## What this project is NOT
 
@@ -21,24 +33,24 @@ of built:
 
 | Role | Who | Responsibility |
 |------|-----|----------------|
-| **Owner** | <name> | Defines what the product does. Not a developer. Runs `./merge-to-main.sh` to release. |
-| **Mentor** | <name> | Reviews architecture, decisions and risky changes. Reachable via <channel>. |
+| **Owner** | <name> | Defines what the product does. Merges pull requests on GitHub. |
+| **Mentor** | <name> | Reviews architecture and decisions, runs the server. Reachable via <channel>. |
 | **Claude** | — | Implements. Follows `CLAUDE.md`, this directory and `DECISIONS.md`. |
 
 ## Stack
 
 - **Language**: Python 3.12
-- **Database**: PostgreSQL 16 (SQLAlchemy 2.x, no ORM-generated migrations)
+- **Database**: PostgreSQL 16 (SQLAlchemy 2.x, numbered migrations)
 - **Web** (optional): FastAPI + Jinja2
 - **LLM** (optional): see `.claude/llm.md`
-- **Deployment**: Docker Compose on a single server, `./redeploy.sh`, GitHub Actions self-hosted runner
+- **Deployment**: Docker Compose on one server; GitHub Actions self-hosted runner runs `./redeploy.sh`
 - **Tests**: pytest (+ ruff via `pytest --ruff`)
 
 ## Quick Reference
 
 ```
 VERSION                 # App version (MAJOR.MINOR), source of truth
-DECISIONS.md            # Architecture Decision Log (ALWAYS maintain!)
+DECISIONS.md            # Architecture Decision Log of THIS project (ALWAYS maintain!)
 RELEASE_NOTES.md        # User-facing change log (DE + EN)
 Roadmap.md              # Scoped-but-not-scheduled ideas
 README.md               # Operations, deployment, setup
@@ -63,11 +75,12 @@ scripts/db-backup.sh    # pg_dump loop, run by the db-backup service
 | How do I talk to the owner, what do I ask before doing? | `.claude/collaboration.md` |
 | Where does new code go, what must never be mixed? | `.claude/architecture.md` |
 | What does the owner call things, what does the code call them? | `.claude/glossary.md` |
+| Why is the template built this way? | `.claude/template-decisions.md` |
 | DB schema, migrations | `.claude/database.md` |
 | Session handling, i18n, dates, logging | `.claude/code-patterns.md` |
 | Tests | `.claude/testing.md` |
 | Docker, deploy pipeline, backups, network posture | `.claude/deployment.md` |
-| Day-to-day operation for the owner | `.claude/operations.md` |
+| Day-to-day operation (owner on GitHub, mentor in the terminal) | `.claude/operations.md` |
 | HTTP API conventions | `.claude/api-design.md` |
 | LLM integration | `.claude/llm.md` |
 | Classic ML training | `.claude/machine-learning.md` |

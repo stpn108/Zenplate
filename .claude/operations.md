@@ -1,75 +1,100 @@
-# Operations — for the owner
+# Operations
 
-Everything in this file is meant to be run by the project owner without
-help. Each command is copy-paste ready. Run them in the project directory
-on the server.
+Two audiences. The owner never needs a terminal; everything in the first
+half happens on GitHub. The second half is for the mentor on the server.
 
-## Release a change
+---
+
+## For the owner (GitHub only)
+
+### Release a change
+
+1. Open the pull request Claude sent you. Read "What changes for users".
+2. Check the status line above the Merge button: **Tests ✓** green means
+   the automatic tests passed. Red: do not merge; tell Claude.
+3. Press **Merge pull request**, then **Confirm merge**.
+4. Open the **Actions** tab. Two runs appear in order: *Auto-bump version*,
+   then *Deploy*. When *Deploy* is green, the change is live.
+   Red *Deploy*: nothing was changed on the server, the old version keeps
+   running. Open the run, copy the red step's text, paste it to Claude.
+
+### See what is live
+
+Repository → **Actions** → latest green *Deploy* run: its log prints
+`Deploying <commit> v<version>`. Compare with `VERSION` in the repository
+and with the newest entry in `RELEASE_NOTES.md`.
+
+### Something looks wrong in the product
+
+Tell Claude what you did, what you expected, what happened, and when.
+Claude reads the logs. If the product is down and Claude cannot fix it
+from the code, Claude will tell you to contact the mentor.
+
+### Request a change
+
+Describe it to Claude in your own words. Claude writes a requirement, reads
+it back, and starts only after your yes. See `.claude/requirements.md`.
+
+### Never
+
+- Never press "Merge" on a red PR.
+- Never edit files on GitHub directly; go through Claude.
+- Never paste the contents of `.env` or any password into a chat.
+
+---
+
+## For the mentor (terminal on the server)
+
+Run in the deployment directory (`DEPLOY_DIR`).
+
+### Deploy by hand (pipeline broken, or hotfix)
 
 ```bash
-./merge-to-main.sh
+git pull --ff-only origin main && ./redeploy.sh
 ```
 
-Merges your current branch into `main` and pushes. The deploy pipeline on
-the server then runs the tests and, if they pass, deploys. Watch it at
-`https://github.com/<owner>/<repo>/actions`. Green = live. Red = nothing
-was deployed, the old version keeps running; the log says which test
-failed. Paste that log to Claude.
+Tests, build, restart, verify. Aborts at the first failure and leaves the
+running app untouched. `./merge-to-main.sh` merges a branch to `main` from
+the terminal and waits for the version bump; only for `developer` mode.
 
-## Deploy by hand (no pipeline, or pipeline is broken)
-
-```bash
-./redeploy.sh
-```
-
-Same steps as the pipeline: tests, build, restart, verify. Aborts at the
-first failure and leaves the running app untouched.
-
-## Is the right version running?
+### Is the right version running?
 
 ```bash
 ./version.sh
 ```
 
-Shows repo version vs. running version. "Redeploy needed" means the
-server has newer code than the running container.
-
-## Read the logs
+### Logs, status, restart
 
 ```bash
-docker compose logs -f app        # live, Ctrl+C to stop
-docker compose logs --tail=200 app  # last 200 lines
-```
-
-## Restart without redeploying
-
-```bash
+docker compose ps                    # every service running / healthy?
+docker compose logs -f app           # live, Ctrl+C to stop
+docker compose logs --tail=200 app
 docker compose restart app
 ```
 
-## Something is down
+### Something is down
 
 1. `docker compose ps` — every service should say `running` / `healthy`.
 2. `docker compose logs --tail=100 app` — the last lines usually name the cause.
 3. `docker compose restart app`.
 4. Still down: `./redeploy.sh` (rebuilds from the current code).
-5. Still down: send the output of steps 1 and 2 to Claude, and tell the
-   mentor.
+5. Still down: check the runner (`Actions → Runners` must show it online),
+   disk space (`df -h`), and the database (`docker compose logs db`).
 
-## Backups
+### Backups
 
 The `db-backup` service dumps the database every `BACKUP_INTERVAL`
 (default 4h) into `volumes/backups/` and keeps `BACKUP_RETENTION_DAYS`
 (default 7) days.
 
 ```bash
-ls -lh volumes/backups/           # list backups
-docker compose logs db-backup     # last backup runs
+ls -lh volumes/backups/
+docker compose logs db-backup
 ```
 
-### Restore a backup
+#### Restore
 
-This replaces the live database. Stop the app first.
+Replaces the live database. Stop the app first.
 
 ```bash
 docker compose stop app
@@ -78,20 +103,19 @@ gunzip -c volumes/backups/backup_YYYY-MM-DD-HH-MM-SS.sql.gz \
 docker compose start app
 ```
 
-Copy `volumes/backups/` somewhere off the server regularly; the backup
-service protects against mistakes, not against losing the server.
+Copy `volumes/backups/` off the server regularly; the service protects
+against mistakes, not against losing the server.
 
-## Environment (.env)
+### Runner and pipeline
+
+- Runner status: Repository → Settings → Actions → Runners (label `deploy`).
+- Runner service on the server: `sudo ./svc.sh status` in the runner directory.
+- `DEPLOY_DIR`: Repository → Settings → Variables → Actions.
+- Branch protection on `main` (Settings → Branches): require the `Tests`
+  status check, so the Merge button stays disabled while tests are red.
+
+### Environment (.env)
 
 Secrets and settings live in `.env` next to `docker-compose.yml`. Never
-commit it, never paste it into chat. `.env.example` lists every key.
-After changing `.env`: `docker compose up -d` applies it.
-
-## Who to call
-
-| Situation | Do |
-|-----------|----|
-| Pipeline red, test failure | Paste the failing test output to Claude |
-| App down, restart did not help | Mentor |
-| Data looks wrong | Do NOT restore a backup on your own; ask the mentor |
-| Need a new feature | Describe it to Claude; it will write a requirement and read it back |
+committed. `.env.example` lists every key. After changing `.env`:
+`docker compose up -d`.

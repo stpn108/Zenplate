@@ -35,13 +35,14 @@ is the format.
    is not approval of the whole requirement.
 5. **Implement.** Every acceptance criterion maps to at least one test.
    Name tests after the criterion (`test_req_012_reminder_not_sent_twice`).
-6. **Close**: set `IMPLEMENTED`, fill in version, tests and release note.
+6. **Deliver**: open the pull request (`.claude/collaboration.md` §6).
+7. **Close** after the merge: set `IMPLEMENTED`, fill in version, tests and release note.
 
 ## Rules
 
 - No code before `APPROVED`, except the exceptions in
   `.claude/collaboration.md` §2.
-- One requirement per feature branch. Two requirements, two branches.
+- One requirement per feature branch and pull request. Two requirements, two PRs.
 - If a question comes up during implementation that the requirement does
   not answer, ask; do not pick the convenient interpretation. Record the
   answer in the requirement under "Open questions" with the date.
