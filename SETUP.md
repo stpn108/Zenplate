@@ -53,12 +53,13 @@ Only that run decides whether the new version is deployed.
 
    Why off: the "Auto-bump version" workflow pushes a commit to `main`
    with the built-in `GITHUB_TOKEN`. Both "require a pull request" and
-   "require status checks" reject that push, the bump never happens and
-   the Deploy job never starts (this is exactly why the bump is disabled
-   on the template repository itself). Production is protected by the
-   server-side test run in `redeploy.sh`, not by the Merge button: a red
-   PR that gets merged fails on the server and nothing is deployed.
-   Claude's rules forbid pushing to `main`; the owner has no terminal.
+   "require status checks" reject that push. The pipeline does not stop
+   over it (the bump logs a warning and Deploy still runs), but the
+   version number then never advances, which breaks `./version.sh` and
+   the release notes. Production is protected by the server-side test
+   run in `redeploy.sh`, not by the Merge button: a red PR that gets
+   merged fails on the server and nothing is deployed. Claude's rules
+   forbid pushing to `main`; the owner has no terminal.
 
    Hardened variant (optional, more admin work): use a *ruleset* instead,
    require the `tests` check, and let the bump workflow push with a
@@ -159,8 +160,8 @@ directory between two repositories.
    issue labelled `deploy-failed` is opened.
 4. On the server: `./version.sh` shows repo and app on the same commit.
 
-If Deploy never starts: the bump did not push (branch rules, step 1.4) or
-the runner is offline (step 3.3). This is the one case that is silent for
+If Deploy never starts: the runner is offline (step 3.3) or Actions are
+disabled (step 1.3). This is the one case that is silent for
 the owner: a queued job produces no comment. GitHub cancels it after 24 h.
 The owner's instruction is "no comment after 10 minutes → tell the mentor". If Deploy is red: open the run, the
 failing step is either the test run or the post-deploy verification; the
@@ -202,7 +203,7 @@ different runner, different directory, different Compose project.
 | Symptom | Cause | Fix |
 |---------|-------|-----|
 | Deploy job stays "Queued" | Runner offline or label missing | `sudo ./svc.sh status` in the runner dir; label must be `deploy` |
-| Bump workflow red: "protected branch" | Branch rules block the push | Step 1.4 |
+| Bump run shows a warning "Could not push the version bump" | Branch rules block the push; Deploy still ran | Step 1.4 |
 | Tests green on PR, red on server | Environment difference (dependency, TZ, Docker) | Open the Deploy log; the server run is authoritative. Paste it to Claude. |
 | "App runs '…', expected '…'. Image was NOT rebuilt." | Build used a cached or stale image | Re-run the Deploy job; if it repeats, `docker compose build --no-cache app` on the server |
 | `network shared_net declared as external, but could not be found` | Step 2.2 skipped | `docker network create shared_net` |

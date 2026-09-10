@@ -1,7 +1,8 @@
 name: Deploy
 
 # Runs on the self-hosted runner installed on the production server, after the
-# version bump that follows every merge to main. It executes ./redeploy.sh in
+# version bump that follows every merge to main (whatever the bump's outcome;
+# a failed bump must never block a deploy). It executes ./redeploy.sh in
 # the server's deployment directory: tests in the real test container first,
 # build and deploy only when they pass. The outcome is posted as a comment on
 # the merged pull request (green: "deployed", red: the failing log), so the
@@ -26,8 +27,7 @@ jobs:
   deploy:
     if: >-
       github.event.repository.name != 'Zenplate' &&
-      (github.event.workflow_run.conclusion == 'success' ||
-       github.event.workflow_run.conclusion == 'skipped')
+      github.event.workflow_run.conclusion != 'cancelled'
     runs-on: [self-hosted, deploy]
     timeout-minutes: 30
 

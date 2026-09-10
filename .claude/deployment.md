@@ -48,9 +48,9 @@ GitHub Actions:  comment on the merged PR: ✅ Deployed vX.Y / ❌ failed + log 
 - **The owner never uses a terminal.** Their interface is the pull
   request, the `Tests` check, the Merge button and the Actions tab.
 - Branch rules on `main`: block force pushes and deletions only. Required
-  checks or a PR requirement would block the version-bump push and with
-  it the Deploy job. The gate is the server run, not the Merge button.
-  Full setup: `SETUP.md`.
+  checks or a PR requirement reject the version-bump push; Deploy still
+  runs, but the version number stops advancing. The gate is the server
+  run, not the Merge button. Full setup: `SETUP.md`.
 - `./redeploy.sh` is the only deploy path, manual or automated. Both behave
   identically. `./merge-to-main.sh` is the terminal alternative to the
   Merge button, for `developer` mode.
