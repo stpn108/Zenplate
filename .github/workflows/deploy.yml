@@ -1,0 +1,42 @@
+name: Deploy
+
+# Runs on the self-hosted runner installed on the production server, after the
+# version bump that follows every merge to main. It executes ./redeploy.sh in
+# the server's deployment directory: tests in the real test container first,
+# build and deploy only when they pass. See .claude/deployment.md.
+#
+# Setup (once per server): register a self-hosted runner as the deploy user,
+# label it "deploy", and set the repository variable DEPLOY_DIR to the
+# directory that holds the checkout, .env and volumes/.
+
+on:
+  workflow_run:
+    workflows: ["Auto-bump version"]
+    types: [completed]
+    branches: [main]
+
+concurrency:
+  group: deploy-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: >-
+      github.event.repository.name != 'Zenplate' &&
+      (github.event.workflow_run.conclusion == 'success' ||
+       github.event.workflow_run.conclusion == 'skipped')
+    runs-on: [self-hosted, deploy]
+    timeout-minutes: 30
+
+    steps:
+      - name: Pull main in the deployment directory
+        working-directory: ${{ vars.DEPLOY_DIR }}
+        run: |
+          git fetch origin main
+          git checkout main
+          git pull --ff-only origin main
+          echo "Deploying $(git rev-parse --short HEAD) v$(cat VERSION)"
+
+      - name: Test, build, deploy
+        working-directory: ${{ vars.DEPLOY_DIR }}
+        run: ./redeploy.sh
