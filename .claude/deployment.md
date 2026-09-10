@@ -38,6 +38,7 @@ Server (runner): cd $DEPLOY_DIR && git pull && ./redeploy.sh
                    ├── build image while old app keeps running
                    ├── stop / rm / up -d app
                    └── wait healthy + verify GIT_COMMIT == built commit, else FAIL
+GitHub Actions:  comment on the merged PR: ✅ Deployed vX.Y / ❌ failed + log tail
 ```
 
 - **The owner never uses a terminal.** Their interface is the pull

@@ -37,6 +37,9 @@ Only that run decides whether the new version is deployed.
    anyone's pull request could run on your server.
 2. **Invite the owner**: Settings → Collaborators → Add people → role
    **Write**. Write is enough to merge pull requests; do not give Admin.
+   The owner should keep GitHub e-mail notifications on (the default):
+   the pipeline reports success and failure as a comment on their pull
+   request, and GitHub mails that comment.
 3. **Actions**: Settings → Actions → General → "Allow all actions and
    reusable workflows". Workflow permissions: "Read and write" (the
    version bump commits to `main`).
@@ -150,12 +153,16 @@ directory between two repositories.
    appears on the PR.
 2. Merge the PR on GitHub.
 3. Actions tab: **Auto-bump version** runs, then **Deploy** runs on the
-   runner. Open the Deploy run; the log ends with
-   `Deployed vX.Y (<commit>), app is healthy.`
+   runner. A minute later the merged PR gets a **✅ Deployed vX.Y**
+   comment. On failure it gets a **❌ Deployment failed** comment with the
+   last 60 log lines instead; if no PR can be found for the commit, an
+   issue labelled `deploy-failed` is opened.
 4. On the server: `./version.sh` shows repo and app on the same commit.
 
 If Deploy never starts: the bump did not push (branch rules, step 1.4) or
-the runner is offline (step 3.3). If Deploy is red: open the run, the
+the runner is offline (step 3.3). This is the one case that is silent for
+the owner: a queued job produces no comment. GitHub cancels it after 24 h.
+The owner's instruction is "no comment after 10 minutes → tell the mentor". If Deploy is red: open the run, the
 failing step is either the test run or the post-deploy verification; the
 old version is still running.
 

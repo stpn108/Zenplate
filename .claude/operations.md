@@ -13,16 +13,19 @@ half happens on GitHub. The second half is for the mentor on the server.
 2. Check the status line above the Merge button: **Tests ✓** green means
    the automatic tests passed. Red: do not merge; tell Claude.
 3. Press **Merge pull request**, then **Confirm merge**.
-4. Open the **Actions** tab. Two runs appear in order: *Auto-bump version*,
-   then *Deploy*. When *Deploy* is green, the change is live.
-   Red *Deploy*: nothing was changed on the server, the old version keeps
-   running. Open the run, copy the red step's text, paste it to Claude.
+4. Wait a few minutes. The pipeline writes a comment on the same pull
+   request (you also get an e-mail):
+   - **✅ Deployed vX.Y** — the change is live.
+   - **❌ Deployment failed** — nothing changed on the server, the old
+     version keeps running. The comment contains the failing log. Copy it
+     and paste it to Claude.
+   No comment after 10 minutes: the pipeline did not start. Tell the mentor.
 
 ### See what is live
 
-Repository → **Actions** → latest green *Deploy* run: its log prints
-`Deploying <commit> v<version>`. Compare with `VERSION` in the repository
-and with the newest entry in `RELEASE_NOTES.md`.
+The newest pull request with a **✅ Deployed** comment. Or: repository →
+**Actions** → latest green *Deploy* run; its log prints
+`Deploying <commit> v<version>`.
 
 ### Something looks wrong in the product
 
