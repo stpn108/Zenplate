@@ -1,5 +1,11 @@
 name: Auto-bump version
 
+# Bumps MINOR in VERSION on every merge to main (CLAUDE.md Rule 7), unless
+# the merge already changed VERSION (manual major bump). The Deploy workflow
+# starts when this run completes, whatever its outcome: a rejected push
+# (branch rules) only means no new version number this time, never a
+# blocked deploy.
+
 on:
   push:
     branches: [main]
@@ -45,4 +51,9 @@ jobs:
           NEW=$(cat VERSION)
           git add VERSION
           git commit -m "bump version to v${NEW}"
-          git push
+          # Never fail the pipeline over a version number: a rejected push
+          # (required checks / PR rule on main) is reported and the Deploy
+          # workflow still runs on the merged commit.
+          if ! git push; then
+            echo "::warning::Could not push the version bump to main (branch rules?). VERSION stays at $(git show HEAD^1:VERSION). See SETUP.md §1.4."
+          fi

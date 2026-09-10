@@ -8,21 +8,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends build-essential
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# --- Application modules (add new files here!) ---
-COPY main.py .
-COPY database.py .
-COPY utils.py .
-COPY strings.py .
-
-# --- Configuration ---
-COPY pyproject.toml .
-COPY pytest.ini .
+# --- Application modules ---
+# All top-level .py files are copied; tests and tooling are excluded via
+# .dockerignore. A new module never needs a Dockerfile change (template decision T-001).
+COPY *.py .
 
 # --- Templates & static assets ---
 COPY templates ./templates
-
-# --- Tests (available in image for CI; app-tests uses volume mount) ---
-COPY tests ./tests
 
 # Build-time version info
 ARG APP_VERSION=0.0
