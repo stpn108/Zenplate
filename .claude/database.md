@@ -4,13 +4,39 @@
 
 **ALWAYS in `database.py`:**
 
-1. **New table**: Add Model class → auto-created via `Base.metadata.create_all()`
-2. **New column**: Extend Model AND add migration in `migrate_schema()`:
+1. **New table**: Add a Model class. `migrate_schema()` creates it via
+   `Base.metadata.create_all()`.
+2. **New column** (or index, constraint, data fix): extend the Model AND add
+   a numbered migration:
    ```python
-   conn.execute(sqltext("ALTER TABLE IF EXISTS tablename ADD COLUMN IF NOT EXISTS column_name TYPE DEFAULT value;"))
+   def _migrate_002_example_priority(conn):
+       conn.execute(sqltext(
+           "ALTER TABLE IF EXISTS example_items "
+           "ADD COLUMN IF NOT EXISTS priority INTEGER DEFAULT 0;"
+       ))
+
+   MIGRATIONS = [
+       ("001_…", _migrate_001_…),
+       ("002_example_priority", _migrate_002_example_priority),
+   ]
    ```
-3. **Idempotent**: Use `IF NOT EXISTS` / `IF EXISTS` for all DDL statements.
-4. **Migrations:** Use versioned migrations AND inline structures like ADD TABLE ... IF NOT EXISTS or ALTER TABLE ... IF ...
+3. **Idempotent**: `IF NOT EXISTS` / `IF EXISTS` on every DDL statement, so
+   a re-run on a database that already has the change cannot fail.
+4. **Numbered, append-only**: migrations are never renumbered, reordered or
+   deleted once deployed. A wrong migration is fixed by a new one.
+5. **No `conn.commit()` inside a migration.** The runner holds one
+   transaction and an advisory lock; a crash mid-way leaves the database
+   untouched and nothing is recorded in `schema_migrations`.
+6. **Data-changing migrations** (UPDATE/DELETE) need owner approval first
+   (`.claude/collaboration.md` §3) and a test with representative rows.
+
+## How the runner works
+
+`migrate_schema()` runs once at startup: takes a Postgres advisory lock
+(so several containers starting at once do not race), `create_all()`,
+creates `schema_migrations` if missing, applies every version not yet
+recorded, records it. On SQLite (tests) the same path runs without the lock.
+Tests for the runner live in `tests/test_migrations.py`.
 
 ## Session Handling
 
@@ -23,24 +49,16 @@ with Session(engine) as s:
     s.commit()  # EXPLICIT commit!
 ```
 
-## Date/Time
+## Column naming
 
-```python
-from utils import today_str, now_utc, local_today
-# today_str() → "2026-01-17" (local date)
-# now_utc()   → datetime with UTC timezone
-# Day starts at 04:00 (sleep adjustment)
-```
+- `created_at` (UTC, `DateTime(timezone=True)`, `server_default=func.now()`)
+  on every table.
+- Booleans as `is_<state>` / `has_<thing>`; never a bare adjective.
+- Foreign keys as `<table_singular>_id`.
+- Names come from `.claude/glossary.md`. Check it before inventing one.
 
-**CRITICAL**: All time-based functions must respect the local timezone.
+## Personal data
 
-| Component | Configuration |
-|-----------|---------------|
-| `utils.LOCAL_TZ` | `tz.gettz(os.getenv("TZ", "Europe/Berlin"))` |
-| Docker | `TZ=Europe/Berlin` in environment |
-
-### Common Timezone Mistakes
-
-1. **Scheduler runs in UTC instead of local** → forgot `Defaults(tzinfo=...)`
-2. **Naive vs. aware datetimes** → always use `now_utc()` for timestamps, `local_today()` for date logic
-3. **4am boundary ignored** → `local_today()` returns yesterday before 4am
+Every table that stores user content is listed in `.claude/glossary.md`
+under "Units and formats" or a "Personal data" table, together with the
+deletion path. If the project has an API, see `.claude/api-design.md` §5.

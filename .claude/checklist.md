@@ -1,19 +1,33 @@
 # Change Checklist
 
-Before completing any task, verify:
+Before reporting any task as done, verify:
 
-- [ ] New source file? → Update `Dockerfile` with `COPY` directive
-- [ ] Never ever create or commit /.env!
-- [ ] Always make sure to update docker-compose.yml when new environment variables are introduced!
-- [ ] New external dependency? → Add to dependency file with pinned version
-- [ ] Using a new function from an existing package? → Check if it requires an **optional extra** (e.g. `[webhooks]`, `[hiredis]`)
+**Requirement & scope**
+- [ ] Behaviour change? → `requirements/REQ-NNN-*.md` exists and is `APPROVED`
+- [ ] Stayed inside that requirement? Anything extra → Roadmap or new requirement
+- [ ] New domain term? → `.claude/glossary.md` updated first
+- [ ] Architecture/design decision? → `DECISIONS.md`, immediately
+- [ ] Touches a `FINAL` decision or `architecture.md` rule? → stop, escalate
+
+**Code**
 - [ ] New DB table? → Model in `database.py`
-- [ ] New DB column? → Model + migration in `migrate_schema()`
-- [ ] New feature? → Tests in `app/tests/`
-- [ ] New feature with data? → Which table logs it? `created_at` timestamp for time series?
-- [ ] User-facing text? → In `strings.py` (DE + EN)
-- [ ] Time-based logic? → Use `utils.local_today()` / `utils.now_utc()`, NOT `datetime.now()`
-- [ ] Breaking change? → **Ask user first!** Then bump `VERSION` manually to next major
-- [ ] User-visible change? → Add entry to release notes
-- [ ] Architecture/design decision? → Document in `DECISIONS.md`!
-- [ ] Secrets or credentials? → Environment variable or secrets manager, NEVER hardcoded
+- [ ] New DB column / index / data fix? → Model + numbered migration in `MIGRATIONS`
+- [ ] Migration idempotent, no `commit()` inside?
+- [ ] New non-Python asset the container needs (template, data file)? → `COPY` in `Dockerfile`
+- [ ] New env variable? → `docker-compose.yml` + `.env.example` + README
+- [ ] New external dependency or optional extra? → `requirements.txt`, pinned
+- [ ] User-facing text? → `strings.py` (DE + EN)
+- [ ] Time-based logic? → `utils.local_today()` / `utils.now_utc()`, NOT `datetime.now()`
+- [ ] Domain number computed? → in exactly one function
+- [ ] Feature with data? → which table logs it, `created_at` present?
+- [ ] Secrets? → environment variable, NEVER in code or git
+
+**Verification**
+- [ ] Tests for every acceptance criterion, `cd app && pytest` green (includes ruff)
+- [ ] No test weakened, skipped or deleted to get green
+- [ ] Breaking change? → **Ask first**, then bump `VERSION` to next major
+
+**Communication**
+- [ ] User-visible change? → entry in `RELEASE_NOTES.md` (see `.claude/release-notes.md`)
+- [ ] Requirement set to `IMPLEMENTED` with version and tests
+- [ ] Owner report: what changed for you / what is open / what I need
