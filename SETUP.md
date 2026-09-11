@@ -89,6 +89,16 @@ the server share that user.
    ```bash
    docker network create shared_net
    ```
+   And the ofelia daemon, once per server: it reads the `ofelia.*` labels
+   of every container on the host through the Docker socket and runs the
+   database backup job. If it is not running yet:
+   ```bash
+   docker run -d --name ofelia --restart unless-stopped \
+     -v /var/run/docker.sock:/var/run/docker.sock:ro \
+     mcuadros/ofelia:<pinned version> daemon --docker
+   ```
+   Job names are global on the host, so every project sets its own
+   `OFELIA_PREFIX` in `.env` (step 4).
 3. Clone the project as the deploy user:
    ```bash
    sudo -iu deploy
@@ -104,14 +114,15 @@ the server share that user.
    cp .env.example .env
    nano .env
    ```
-   Set a strong `POSTGRES_PASSWORD`, put it into `DATABASE_URL` as well,
-   and give every project on the server a **unique** `COMPOSE_PROJECT_NAME`
-   and `PORTS_PREFIX` (e.g. `zenplate-a` / `10`, `zenplate-b` / `11`).
-   Duplicates here are the only way two projects can interfere.
+   Set a strong `POSTGRES_PASSWORD`, put it into `DATABASE_URL` as well
+   (keep the `postgresql+psycopg://` scheme), and give every project on
+   the server a **unique** `COMPOSE_PROJECT_NAME`, `PORTS_PREFIX` and
+   `OFELIA_PREFIX` (e.g. `zenplate-a` / `10` / `zenplate-a-`). Duplicates
+   here are the only way two projects can interfere.
 5. First start:
    ```bash
    ./redeploy.sh
-   docker compose ps     # db, db-backup, app: running/healthy
+   docker compose ps     # db, app: running/healthy
    ```
 
 ## 3. Runner (one per project, on the same server)
@@ -192,9 +203,10 @@ old version is still running.
 | `PORTS_PREFIX` | `.env` — host ports |
 | Checkout directory (`DEPLOY_DIR`) | server + repository variable |
 | Runner directory and name | `~/actions-runner/<repo>`, `<repo>-deploy` |
+| `OFELIA_PREFIX` | `.env` — backup job name on the shared ofelia daemon |
 
 Shared and fine to share: the deploy user, the docker group, the
-`shared_net` network, the Docker daemon. Backups land in each project's
+`shared_net` network, the Docker daemon, the ofelia daemon. Backups land in each project's
 own `volumes/backups/`. A deploy in project A never touches project B:
 different runner, different directory, different Compose project.
 
@@ -207,4 +219,5 @@ different runner, different directory, different Compose project.
 | Tests green on PR, red on server | Environment difference (dependency, TZ, Docker) | Open the Deploy log; the server run is authoritative. Paste it to Claude. |
 | "App runs '…', expected '…'. Image was NOT rebuilt." | Build used a cached or stale image | Re-run the Deploy job; if it repeats, `docker compose build --no-cache app` on the server |
 | `network shared_net declared as external, but could not be found` | Step 2.2 skipped | `docker network create shared_net` |
+| No files in `volumes/backups/` after 4h | ofelia daemon not running, or `OFELIA_PREFIX` collides with another project | Step 2.2; `docker logs ofelia` |
 | Owner cannot press Merge | Owner has Read, not Write | Step 1.2 |

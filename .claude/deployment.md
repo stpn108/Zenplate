@@ -5,7 +5,7 @@
 ```
 docker-compose.yml
 ├── db          Postgres 16, healthcheck pg_isready
-├── db-backup   pg_dump every BACKUP_INTERVAL into ./volumes/backups (scripts/db-backup.sh)
+│             ofelia labels: pg_dump every 4h into BACKUP_PATH (scripts/db-backup.sh)
 ├── app         Production app (own image, no volume mount), healthcheck via healthcheck.py
 └── app-tests   Test runner (same image, ./app mounted, pytest --testmon in watch mode)
 ```
@@ -15,6 +15,12 @@ docker-compose.yml
 - Every service has `mem_limit` + `memswap_limit` so one runaway container
   cannot take the host down.
 - `TZ` comes from `.env` (default `Europe/Berlin`).
+- **Backups via ofelia.** The ofelia daemon is NOT part of this compose
+  file: it runs once per server (shared by all projects) and reads the
+  `ofelia.*` labels on `db` through the Docker socket. Its absence here is
+  not a bug; do not add an ofelia service. `OFELIA_PREFIX` in `.env` must
+  be unique per project, otherwise job names collide on the shared daemon.
+  Cron format is ofelia's 6-field form with seconds.
 - **One `app` service is the default.** Instances are named `app-1..N`
   behind HAProxy only when scaling is measured as necessary; never
   `bot-*` / `api-*`. Layout, prerequisites and rolling deploy:
@@ -79,7 +85,7 @@ GitHub Actions:  comment on the merged PR: ✅ Deployed vX.Y / ❌ failed + log 
 | `redeploy.sh` | Tests → build → deploy → verify. Aborts on first failure. |
 | `merge-to-main.sh` | Terminal alternative to the Merge button (`developer` mode) |
 | `version.sh` | Repo version vs. running container |
-| `scripts/db-backup.sh` | pg_dump + retention, run by the `db-backup` service |
+| `scripts/db-backup.sh` | pg_dump + retention, executed inside `db` by ofelia |
 
 ## Network & security posture
 

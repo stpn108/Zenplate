@@ -28,10 +28,10 @@ that supersedes it and involve the mentor.
 
 | | |
 |---|---|
-| **Decision** | Service `db-backup` runs `scripts/db-backup.sh` every `BACKUP_INTERVAL` (default 4h) into `./volumes/backups`, pruning after `BACKUP_RETENTION_DAYS` (default 7). |
+| **Decision** | `ofelia.*` labels on the `db` service schedule `scripts/db-backup.sh` (pg_dump + retention) every 4h, executed inside the container by the server-wide ofelia daemon. `OFELIA_PREFIX` makes the job name unique per project; `BACKUP_PATH` and `BACKUP_RETENTION_DAYS` are configurable. |
 | **In plain words** | The database is saved automatically every few hours, so a mistake can be undone by going back to an earlier copy. |
-| **Reasoning** | ZenTallyBot depends on an ofelia daemon shared with another project on the host; invisible in the repo. A loop inside Compose has no external dependency and shows up in `docker compose ps`. |
-| **Rejected alternatives** | (A) ofelia labels — needs a daemon outside this repo; (B) host cron — invisible, lost on server rebuild |
+| **Reasoning** | Same mechanism as ZenTallyBot; the ofelia daemon already runs on the shared server, so a second scheduler per project would be redundant. The daemon being outside the repo is documented in `deployment.md` and `SETUP.md` so it is not mistaken for a missing service. |
+| **Rejected alternatives** | (A) a `db-backup` container with a sleep loop — an extra always-on container per project for a job that runs six times a day (tried first, replaced); (B) host cron — invisible, lost on server rebuild |
 
 ### T-004: Container health = database reachable; deploy verifies the running commit
 

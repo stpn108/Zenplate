@@ -86,13 +86,13 @@ docker compose restart app
 
 ### Backups
 
-The `db-backup` service dumps the database every `BACKUP_INTERVAL`
-(default 4h) into `volumes/backups/` and keeps `BACKUP_RETENTION_DAYS`
-(default 7) days.
+The server's ofelia daemon runs `scripts/db-backup.sh` inside the `db`
+container every 4 hours. Dumps land in `BACKUP_PATH` (default
+`volumes/backups/`) and are kept `BACKUP_RETENTION_DAYS` (default 7) days.
 
 ```bash
 ls -lh volumes/backups/
-docker compose logs db-backup
+docker logs ofelia | grep db-backup
 ```
 
 #### Restore
