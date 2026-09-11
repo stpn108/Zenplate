@@ -48,7 +48,7 @@ app/                    # Main code
 ├── templates/         # Jinja2 templates
 ├── .dockerignore      # Keeps tests and tooling out of the image
 └── Dockerfile         # COPY *.py — no per-file lines
-scripts/db-backup.sh    # pg_dump + retention, run by the db-backup service
+scripts/db-backup.sh    # pg_dump + retention, run inside db by the server's ofelia daemon
 .github/workflows/
 ├── ci.yml             # Tests on every non-main push and PR (feedback)
 ├── deploy.yml         # Self-hosted runner: pull main, ./redeploy.sh (the gate)
@@ -79,7 +79,7 @@ scripts/db-backup.sh    # pg_dump + retention, run by the db-backup service
 
 See `.env.example`. Required: `POSTGRES_DB`, `POSTGRES_USER`,
 `POSTGRES_PASSWORD`, `DATABASE_URL`. Optional: `TZ`, `LOG_LEVEL`,
-`PORTS_PREFIX`, `COMPOSE_PROJECT_NAME`, `BACKUP_INTERVAL`,
+`PORTS_PREFIX`, `COMPOSE_PROJECT_NAME`, `OFELIA_PREFIX`, `BACKUP_PATH`,
 `BACKUP_RETENTION_DAYS`.
 
 ---
@@ -142,6 +142,6 @@ docker compose up -d app-tests && docker compose logs -f app-tests
 | Service | Purpose | Port |
 |---------|---------|------|
 | **db** | PostgreSQL 16 | internal |
-| **db-backup** | `pg_dump` every `BACKUP_INTERVAL` into `volumes/backups/` | — |
+| *(ofelia job on db)* | `pg_dump` every 4h into `BACKUP_PATH`, run by the server-wide ofelia daemon | — |
 | **app** | Main application, health-checked | `127.0.0.1:${PORTS_PREFIX}010:8000` |
 | **app-tests** | Continuous test runner | — |

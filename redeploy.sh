@@ -1,6 +1,7 @@
 #!/bin/bash
 # Tests -> Build -> Deploy -> Verify. Aborts on the first failure and leaves
-# the running app untouched. Runs interactively or from the deploy pipeline.
+# the running app untouched. Follows the app logs at the end unless
+# FOLLOW_LOGS=0 (set by the deploy pipeline, which must not block).
 
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -97,9 +98,9 @@ else
     echo "No orphaned containers found. All clean."
 fi
 
-# 5. Start container with new image (db-backup is started alongside if missing)
+# 5. Start container with new image
 log "5. Starting container with new image..."
-docker compose up -d app db-backup
+docker compose up -d app
 
 # 6. Verify: the running container must be healthy AND run the commit just built.
 #    A container that came up from a stale image is a hard failure, not a warning.
@@ -107,7 +108,8 @@ log "6. Verifying deployment (expecting ${GIT_COMMIT})..."
 elapsed=0
 status="unknown"
 while [ $elapsed -lt $HEALTH_TIMEOUT ]; do
-    status=$(docker compose ps --format '{{.Health}}' app 2>/dev/null || echo "unknown")
+    CONTAINER_ID=$(docker compose ps -q app 2>/dev/null)
+    status=$(docker inspect --format '{{.State.Health.Status}}' "$CONTAINER_ID" 2>/dev/null || echo "unknown")
     [ "$status" = "healthy" ] && break
     sleep $HEALTH_INTERVAL
     elapsed=$((elapsed + HEALTH_INTERVAL))
@@ -124,8 +126,8 @@ if [ "$RUNNING_COMMIT" != "$GIT_COMMIT" ]; then
 fi
 log "Deployed v${APP_VERSION} (${GIT_COMMIT}), app is healthy."
 
-# 7. Follow logs only when attached to a terminal (the deploy pipeline is not)
-if [ -t 1 ]; then
+# 7. Follow logs (the deploy pipeline sets FOLLOW_LOGS=0 so it can finish)
+if [ "${FOLLOW_LOGS:-1}" != "0" ]; then
     log "7. Showing logs (press Ctrl+C to exit):"
     docker compose logs -f app 2>&1
 fi

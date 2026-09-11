@@ -43,6 +43,8 @@ jobs:
 
       - name: Test, build, deploy
         working-directory: ${{ vars.DEPLOY_DIR }}
+        env:
+          FOLLOW_LOGS: "0"
         run: |
           set -o pipefail
           ./redeploy.sh 2>&1 | tee "$RUNNER_TEMP/deploy.log"

@@ -16,6 +16,14 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-7}
+    # Backups run by the ofelia daemon that runs once per server (not part of
+    # this compose file). OFELIA_PREFIX keeps job names unique across projects.
+    labels:
+      - "ofelia.enabled=true"
+      - "ofelia.job-exec.${OFELIA_PREFIX:-}db-backup.schedule=0 0 */4 * * *"
+      - "ofelia.job-exec.${OFELIA_PREFIX:-}db-backup.user=root"
+      - "ofelia.job-exec.${OFELIA_PREFIX:-}db-backup.command=/bin/bash /scripts/db-backup.sh"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
@@ -26,31 +34,8 @@ services:
       - shared
     volumes:
       - ./volumes/postgres:/var/lib/postgresql/data
-    restart: unless-stopped
-
-  # Periodic pg_dump into ./volumes/backups (see .claude/operations.md for restore).
-  db-backup:
-    image: postgres:16
-    logging: *default-logging
-    mem_limit: 64m
-    memswap_limit: 64m
-    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      PGPASSWORD: ${POSTGRES_PASSWORD}
-      PGHOST: db
-      BACKUP_INTERVAL: ${BACKUP_INTERVAL:-4h}
-      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-7}
-      TZ: ${TZ:-Europe/Berlin}
-    volumes:
-      - ./volumes/backups:/backups
-      - ./scripts/db-backup.sh:/db-backup.sh:ro
-    entrypoint: ["/bin/sh", "-c"]
-    command: ["while true; do /db-backup.sh; sleep \"$$BACKUP_INTERVAL\"; done"]
-    depends_on:
-      db:
-        condition: service_healthy
+      - ${BACKUP_PATH:-./volumes/backups}:/var/lib/postgresql/backups
+      - ./scripts/db-backup.sh:/scripts/db-backup.sh:ro
     restart: unless-stopped
 
   app:

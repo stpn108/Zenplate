@@ -5,6 +5,7 @@ Replace this with your actual application logic.
 """
 import os
 import logging
+import threading
 from database import migrate_schema
 from utils import setup_logging
 
@@ -23,6 +24,9 @@ def main():
 
     # --- Your application logic here ---
     log.info("Ready.")
+    # Placeholder: keep the process alive so the container stays up and the
+    # health check can pass. Replace with your app's run loop / server.
+    threading.Event().wait()
 
 
 if __name__ == "__main__":
