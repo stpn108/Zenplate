@@ -77,13 +77,16 @@ Only that run decides whether the new version is deployed.
 
 ## 2. Server
 
-Assumes a Linux host with Docker Engine + Compose v2 and one **deploy
-user** (e.g. `deploy`) that owns all project checkouts. All projects on
-the server share that user.
+Assumes a Linux host with Docker Engine + Compose v2. Everything below runs
+as **the user who owns the project checkout and runs `./redeploy.sh`**,
+called the deploy user here. That can simply be your own account; a
+separate account (e.g. `deploy`) is optional hardening, because the
+runner executes repository code with all rights of that user (SSH keys,
+other projects, sudo). All projects on the server share that user.
 
-1. Deploy user in the docker group, once per server:
+1. Deploy user in the docker group, once per server (skip if already the case):
    ```bash
-   sudo usermod -aG docker deploy
+   sudo usermod -aG docker <user>
    ```
 2. Shared Docker network, once per server (Compose expects it):
    ```bash
@@ -101,7 +104,6 @@ the server share that user.
    `OFELIA_PREFIX` in `.env` (step 4).
 3. Clone the project as the deploy user:
    ```bash
-   sudo -iu deploy
    mkdir -p ~/projects && cd ~/projects
    git clone git@github.com:<owner>/<repo>.git <repo>
    cd <repo>
@@ -135,9 +137,9 @@ its own repository, and the Deploy job only touches that project's
 
 1. GitHub: Settings → Actions → Runners → New self-hosted runner → Linux.
    GitHub shows a download block and a `config.sh` line with a fresh
-   token. Run them **as the deploy user**, in a project-specific directory:
+   token. Run them **as the deploy user**, in a project-specific directory
+   outside the checkout:
    ```bash
-   sudo -iu deploy
    mkdir -p ~/actions-runner/<repo> && cd ~/actions-runner/<repo>
    # paste the "Download" block from GitHub here (curl + tar)
    ./config.sh --url https://github.com/<owner>/<repo> \
@@ -146,9 +148,9 @@ its own repository, and the Deploy job only touches that project's
                --labels deploy \
                --unattended
    ```
-2. Install as a service so it survives reboots:
+2. Install as a service (running as the deploy user) so it survives reboots:
    ```bash
-   sudo ./svc.sh install deploy
+   sudo ./svc.sh install <user>
    sudo ./svc.sh start
    sudo ./svc.sh status
    ```
