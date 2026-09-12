@@ -83,3 +83,13 @@ def test_failed_migration_is_rolled_back_and_not_recorded(memory_engine, monkeyp
     monkeypatch.setattr(database, "MIGRATIONS", [])
     database.migrate_schema(memory_engine)
     assert "001_broken" not in _applied_versions(memory_engine)
+
+
+@pytest.mark.parametrize("url, expected", [
+    ("postgresql://zenplate:pw@db/zenplate", "postgresql+psycopg://zenplate:pw@db/zenplate"),
+    ("postgresql+psycopg://zenplate:pw@db/zenplate", "postgresql+psycopg://zenplate:pw@db/zenplate"),
+    ("sqlite:///:memory:", "sqlite:///:memory:"),
+])
+def test_database_url_uses_psycopg3_driver(url, expected):
+    # Bug: DATABASE_URL=postgresql://... made SQLAlchemy import psycopg2, which is not installed.
+    assert database._normalise_url(url) == expected

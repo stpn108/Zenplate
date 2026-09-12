@@ -35,7 +35,12 @@ REQ_HASH_SAVED=$(cat "$REQ_HASH_FILE" 2>/dev/null || echo "")
 
 if [ "$REQ_HASH_CURRENT" != "$REQ_HASH_SAVED" ]; then
     warn "   requirements.txt changed -> rebuilding app-tests image..."
-    docker compose build app-tests
+    # The hash is written only after a successful build: a failed build must
+    # not mark the old image as current, or every later run skips the rebuild.
+    if ! docker compose build app-tests; then
+        err "BUILD OF app-tests FAILED. Deployment aborted. The running app is unchanged."
+        exit 1
+    fi
     echo "$REQ_HASH_CURRENT" > "$REQ_HASH_FILE"
     REBUILT=1
 fi
@@ -97,9 +102,10 @@ else
     echo "No orphaned containers found. All clean."
 fi
 
-# 5. Start container with new image (db-backup is started alongside if missing)
+# 5. Start container with new image (db-backup is started alongside if missing);
+#    --remove-orphans drops containers of services removed from docker-compose.yml
 log "5. Starting container with new image..."
-docker compose up -d app db-backup
+docker compose up -d --remove-orphans app db-backup
 
 # 6. Verify: the running container must be healthy AND run the commit just built.
 #    A container that came up from a stale image is a hard failure, not a warning.

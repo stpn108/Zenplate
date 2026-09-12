@@ -19,7 +19,15 @@ from sqlalchemy.orm import DeclarativeBase, mapped_column, Mapped, Session
 
 log = logging.getLogger(__name__)
 
-DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///./test.db")
+def _normalise_url(url: str) -> str:
+    """psycopg 3 is installed (requirements.txt), not psycopg2: a bare
+    postgresql:// URL must use the +psycopg driver or SQLAlchemy imports psycopg2."""
+    if url.startswith("postgresql://"):
+        return "postgresql+psycopg://" + url[len("postgresql://"):]
+    return url
+
+
+DATABASE_URL = _normalise_url(os.environ.get("DATABASE_URL", "sqlite:///./test.db"))
 engine = create_engine(DATABASE_URL, pool_pre_ping=True)
 
 
