@@ -77,3 +77,13 @@ that supersedes it and involve the mentor.
 | **In plain words** | One file lists, in everyday language, what changed for users in each version. |
 | **Reasoning** | The checklist demanded release notes but no file existed. Markdown is readable on GitHub without tooling. |
 | **Rejected alternatives** | (A) JSON like ZenTallyBot — needs an in-app renderer; (B) git releases — outside the repo, not bilingual. Switch to JSON if the project renders notes in-app. |
+
+### T-009: `DATABASE_URL` is normalised to the psycopg 3 driver
+
+| | |
+|---|---|
+| **Decision** | `database.normalize_database_url()` rewrites `postgresql://` and `postgres://` to `postgresql+psycopg://` before the engine is created. `.env.example` uses the explicit `postgresql+psycopg://` form. Other schemes (SQLite in tests) pass through unchanged. |
+| **In plain words** | A normal database address now just works; before, a new project would not start because the database driver could not be found. |
+| **Reasoning** | `requirements.txt` installs psycopg 3 only, but SQLAlchemy maps a plain `postgresql://` URL to psycopg2, so the template's own `.env.example` value raised `ModuleNotFoundError: psycopg2` at startup. Found while building voice-vault. Fixing it in code also repairs `.env` files that were copied from the old example. |
+| **Rejected alternatives** | (A) only change `.env.example` — leaves existing `.env` files and hand-written URLs broken; (B) install psycopg2-binary as well — a second driver for the same database. |
+
