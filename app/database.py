@@ -19,7 +19,17 @@ from sqlalchemy.orm import DeclarativeBase, mapped_column, Mapped, Session
 
 log = logging.getLogger(__name__)
 
-DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///./test.db")
+
+
+def normalize_database_url(url: str) -> str:
+    """Select psycopg 3 for plain PostgreSQL URLs (psycopg2 is not installed)."""
+    for prefix in ("postgresql://", "postgres://"):
+        if url.startswith(prefix):
+            return "postgresql+psycopg://" + url[len(prefix):]
+    return url
+
+
+DATABASE_URL = normalize_database_url(os.environ.get("DATABASE_URL", "sqlite:///./test.db"))
 engine = create_engine(DATABASE_URL, pool_pre_ping=True)
 
 
