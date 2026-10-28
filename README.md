@@ -98,6 +98,7 @@ Red = nothing deployed. Details and owner instructions: `.claude/operations.md`.
 ```bash
 ./merge-to-main.sh                 # branch → main from the terminal
 ./redeploy.sh                      # tests → build → deploy → verify
+./redeploy.sh --no-cache           # the same, images built without the Docker cache
 ```
 
 ### Everyday commands (mentor)

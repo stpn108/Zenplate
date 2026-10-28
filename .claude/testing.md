@@ -6,11 +6,15 @@
 cd app && pytest                 # all tests + ruff (addopts = --ruff)
 pytest tests/test_example.py -v  # one file
 pytest --testmon                 # only tests affected by the change
+pytest -n 4 --testmon            # the same on four workers, as deploy and watcher run it (T-014)
 pytest --cov=. --cov-report=html # coverage
 ```
 
 `pytest` includes ruff (`pytest-ruff`, configured in `pyproject.toml`).
 An undefined name or a syntax error fails the suite, not production.
+
+The deploy scripts have their own tests outside `app/`, run on the host:
+`python3 scripts/test_deploy_scripts.py`.
 
 ## Fixtures (`conftest.py`)
 

@@ -57,7 +57,11 @@ git pull --ff-only origin main && ./redeploy.sh
 ```
 
 Tests, build, restart, verify. Aborts at the first failure and leaves the
-running app untouched. `./merge-to-main.sh` merges a branch to `main` from
+running app untouched. From a terminal it runs detached: a dropped SSH
+session does not stop it, Ctrl-C does; after a reconnect,
+`tail -f redeploy.log` shows the run. `./redeploy.sh --no-cache` rebuilds
+the images without the build cache, so unpinned packages get their latest
+versions. `./merge-to-main.sh` merges a branch to `main` from
 the terminal and waits for the version bump; only for `developer` mode.
 
 ### Is the right version running?
