@@ -55,7 +55,7 @@ env_overrides() {
             value="${BASH_REMATCH[1]}"
         else
             # Unquoted, the value ends before " #" and trailing blanks, as docker compose reads it
-            value="${value%%[[:space:]]#*}"
+            value="${value%% #*}"
             value="${value%"${value##*[![:space:]]}"}"
         fi
         [ "$(printenv "$key")" = "$value" ] || printf ' %s' "$key"
