@@ -85,15 +85,16 @@ services:
     build:
       context: ./app
     logging: *default-logging
-    mem_limit: 512m
-    memswap_limit: 512m
+    # T-014: four test workers; raise it when a growing suite hits the limit (exit 137)
+    mem_limit: 1g
+    memswap_limit: 1g
     user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
     volumes:
       - ./app:/app
     environment:
       DATABASE_URL: "sqlite:///:memory:"
       TZ: ${TZ:-Europe/Berlin}
-    command: /bin/sh -c "rm -fr .testmondata .pytest_cache; pytest --testmon --cov=. --cov-report=term || true; ptw . --delay 2 --testmon -v"
+    command: /bin/sh -c "rm -fr .testmondata .pytest_cache; pytest -n 4 --testmon --cov=. --cov-report=term || true; ptw . --delay 2 --testmon -n 4 -v"
     restart: unless-stopped
     tty: true
     stdin_open: true

@@ -205,6 +205,6 @@ different runner, different directory, different Compose project.
 | Deploy job stays "Queued" | Runner offline or label missing | `sudo ./svc.sh status` in the runner dir; label must be `deploy` |
 | Bump run shows a warning "Could not push the version bump" | Branch rules block the push; Deploy still ran | Step 1.4 |
 | Tests green on PR, red on server | Environment difference (dependency, TZ, Docker) | Open the Deploy log; the server run is authoritative. Paste it to Claude. |
-| "App runs '…', expected '…'. Image was NOT rebuilt." | Build used a cached or stale image | Re-run the Deploy job; if it repeats, `docker compose build --no-cache app` on the server |
+| "App runs '…', expected '…'. Image was NOT rebuilt." | Build used a cached or stale image | Re-run the Deploy job; if it repeats, `./redeploy.sh --no-cache` on the server |
 | `network shared_net declared as external, but could not be found` | Step 2.2 skipped | `docker network create shared_net` |
 | Owner cannot press Merge | Owner has Read, not Write | Step 1.2 |

@@ -18,5 +18,6 @@ pytest
 pytest-asyncio
 pytest-watcher
 pytest-testmon
+pytest-xdist==3.8.0
 pytest-cov
 freezegun

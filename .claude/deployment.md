@@ -7,7 +7,7 @@ docker-compose.yml
 ├── db          Postgres 16, healthcheck pg_isready
 ├── db-backup   pg_dump every BACKUP_INTERVAL into ./volumes/backups (scripts/db-backup.sh)
 ├── app         Production app (own image, no volume mount), healthcheck via healthcheck.py
-└── app-tests   Test runner (same image, ./app mounted, pytest --testmon in watch mode)
+└── app-tests   Test runner (same image, ./app mounted, pytest -n 4 --testmon in watch mode)
 ```
 
 - All app containers run as the host user via `HOST_UID`/`HOST_GID`
@@ -37,9 +37,10 @@ Owner:           reads "What changes for users", presses Merge on GitHub
 GitHub Actions:  "Auto-bump version" (VERSION += 0.1) on main
                    └── on completion: "Deploy" on the self-hosted runner
 Server (runner): cd $DEPLOY_DIR && git pull && ./redeploy.sh
-                   ├── pytest --testmon in the app-tests container
+                   ├── shell overrides a key from .env → stop (T-012)
+                   ├── pytest -n 4 --testmon in the app-tests container (four workers, T-014)
                    ├── FAIL → stop, nothing deployed, workflow red
-                   ├── build image while old app keeps running
+                   ├── build image (layer cache, T-013) while old app keeps running
                    ├── stop / rm / up -d app
                    └── wait healthy + verify GIT_COMMIT == built commit, else FAIL
 GitHub Actions:  comment on the merged PR: ✅ Deployed vX.Y / ❌ failed + log tail
@@ -76,8 +77,9 @@ GitHub Actions:  comment on the merged PR: ✅ Deployed vX.Y / ❌ failed + log 
 
 | Script | Purpose |
 |--------|---------|
-| `redeploy.sh` | Tests → build → deploy → verify. Aborts on first failure. |
-| `merge-to-main.sh` | Terminal alternative to the Merge button (`developer` mode) |
+| `redeploy.sh` | Tests → build → deploy → verify. Aborts on first failure. From a terminal it runs detached, log in `redeploy.log` (T-011); refuses shell overrides of `.env` (T-012); `--no-cache` rebuilds the images without the build cache (T-013) |
+| `merge-to-main.sh` | Terminal alternative to the Merge button (`developer` mode); never leaves a half merge (T-010) |
+| `scripts/test_deploy_scripts.py` | Tests for both scripts. Run on the host, not in a container: `python3 scripts/test_deploy_scripts.py` |
 | `version.sh` | Repo version vs. running container |
 | `scripts/db-backup.sh` | pg_dump + retention, run by the `db-backup` service |
 
