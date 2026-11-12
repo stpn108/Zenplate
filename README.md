@@ -115,8 +115,8 @@ ls -lh volumes/backups/            # database backups
 
 ### Web server logs
 
-Every HTTP service writes `access.log` (one line per request, path without
-query string) and `error.log` (warnings and errors) to
+Every HTTP service writes `access.log` (one line per request, path and
+Referer without query string) and `error.log` (warnings and errors) to
 `/var/log/<COMPOSE_PROJECT_NAME>/` on the host. The same lines still go to
 stdout (`docker compose logs`, Loki/Grafana). logrotate rotates them daily
 and keeps 14 days (`deploy/logrotate.conf`). `./redeploy.sh` creates the

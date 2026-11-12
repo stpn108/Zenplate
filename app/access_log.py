@@ -10,7 +10,8 @@ The line goes to the logger "access" at INFO. setup_logging() sends it to stdout
 and, with LOG_DIR set, to LOG_DIR/access.log. Switch off the server's own access log where this
 middleware is installed (uvicorn: access_log=False / --no-access-log), or every request is logged twice.
 
-Never logged: the query string (tokens, OAuth codes), bodies, cookies, Authorization.
+Never logged: the query string (tokens, OAuth codes), also not the Referer's query string and
+fragment, bodies, cookies, Authorization.
 The peer address is read from the ASGI scope and left untouched; X-Forwarded-For is only logged.
 
 Environment:
@@ -43,6 +44,12 @@ def _escape(value: str) -> str:
 def _header(headers, name: bytes) -> str:
     """All values of one request header, joined by ", "; "-" when the header is missing."""
     values = [v.decode("latin-1") for k, v in headers if k.lower() == name]
+    return _escape(", ".join(values)) if values else "-"
+
+
+def _referer(headers) -> str:
+    """The Referer without query string and fragment: a page URL can carry tokens and OAuth codes."""
+    values = [v.decode("latin-1").split("?", 1)[0].split("#", 1)[0] for k, v in headers if k.lower() == b"referer"]
     return _escape(", ".join(values)) if values else "-"
 
 
@@ -85,7 +92,7 @@ class AccessLogMiddleware:
                 scope.get("http_version", "1.1"),
                 response["status"],
                 response["bytes"],
-                _header(headers, b"referer"),
+                _referer(headers),
                 _header(headers, b"user-agent"),
                 _header(headers, b"x-forwarded-for"),
                 duration,

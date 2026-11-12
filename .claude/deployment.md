@@ -97,7 +97,8 @@ GitHub Actions:  comment on the merged PR: ✅ Deployed vX.Y / ❌ failed + log 
 - `redeploy.sh` creates the directory and `/etc/logrotate.d/<COMPOSE_PROJECT_NAME>`
   (from `deploy/logrotate.conf`, daily, 14 days). It needs sudo only when one
   of them is missing or different. Never touch other paths under `/var/log` or `/etc`.
-- Never log the query string, bodies, cookies or `Authorization`.
+- Never log the query string (of the path or the Referer), the Referer's
+  fragment, bodies, cookies or `Authorization`.
 
 ## Network & security posture
 

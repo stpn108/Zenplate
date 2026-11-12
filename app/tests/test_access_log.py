@@ -78,6 +78,18 @@ async def test_access_log_drops_query_string(access_lines):
     assert "SECRET" not in line and "?" not in line
 
 
+@pytest.mark.parametrize("referer, expected", [
+    (b"https://example.org/callback?code=SECRET&state=abc", "https://example.org/callback"),
+    (b"https://example.org/page#access_token=SECRET", "https://example.org/page"),
+    (b"https://example.org/a?x=SECRET#frag", "https://example.org/a"),
+    (b"https://example.org/plain", "https://example.org/plain"),
+])
+async def test_access_log_drops_referer_query_and_fragment(access_lines, referer, expected):
+    await request(AccessLogMiddleware(make_app()), headers=[(b"referer", referer)])
+    (line,) = access_lines()
+    assert LINE.match(line)["referer"] == expected and "SECRET" not in line
+
+
 async def test_access_log_never_logs_cookie_or_authorization(access_lines):
     headers = [(b"cookie", b"session=COOKIE"), (b"authorization", b"Bearer TOKEN")]
     await request(AccessLogMiddleware(make_app()), headers=headers)

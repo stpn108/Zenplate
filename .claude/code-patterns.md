@@ -64,8 +64,9 @@ log.error("Payment failed user_id=%s reason=%s", user_id, exc)
   ```
 
   Health check paths in `ACCESS_LOG_SKIP` (default `/health,/healthz`) are
-  not logged. The middleware never logs the query string, bodies, cookies or
-  `Authorization`, and does not change `request.client`.
+  not logged. The middleware never logs the query string, the Referer's
+  query string and fragment, bodies, cookies or `Authorization`, and does
+  not change `request.client`.
 - Every log line carries the identifiers needed to find the case again
   (user id, request id, job name). "Something went wrong" is not a log line.
 - Levels: DEBUG detail, INFO operational events, WARNING recoverable,
