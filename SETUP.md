@@ -188,7 +188,7 @@ old version is still running.
 
 | Must be unique per project | Where |
 |----------------------------|-------|
-| `COMPOSE_PROJECT_NAME` | `.env` — container and volume names |
+| `COMPOSE_PROJECT_NAME` | `.env` — container and volume names, log directory `/var/log/<name>` (T-015) |
 | `PORTS_PREFIX` | `.env` — host ports |
 | Checkout directory (`DEPLOY_DIR`) | server + repository variable |
 | Runner directory and name | `~/actions-runner/<repo>`, `<repo>-deploy` |

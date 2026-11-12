@@ -79,6 +79,22 @@ docker compose logs --tail=200 app
 docker compose restart app
 ```
 
+### Web server logs on the host
+
+`/var/log/<COMPOSE_PROJECT_NAME>/access.log` (one line per request) and
+`error.log` (warnings and errors), in addition to `docker compose logs`.
+Rotated daily by logrotate, 14 days kept, older days compressed.
+
+```bash
+tail -f /var/log/$COMPOSE_PROJECT_NAME/access.log
+ls -l /var/log/$COMPOSE_PROJECT_NAME/
+```
+
+`redeploy.sh` sets up the directory and `/etc/logrotate.d/<COMPOSE_PROJECT_NAME>`
+with sudo. If sudo needs a password, run `./redeploy.sh` once from a
+terminal, or the two commands the failed Deploy log prints. After that the
+pipeline needs no sudo.
+
 ### Something is down
 
 1. `docker compose ps` — every service should say `running` / `healthy`.

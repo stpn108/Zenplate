@@ -68,6 +68,11 @@ services:
       DATABASE_URL: ${DATABASE_URL}
       TZ: ${TZ:-Europe/Berlin}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      # T-015: access.log and error.log on the host, in addition to stdout
+      LOG_DIR: /var/log/app
+      SERVICE_NAME: app
+    volumes:
+      - /var/log/${COMPOSE_PROJECT_NAME:?}:/var/log/app
     ports:
       - "127.0.0.1:${PORTS_PREFIX}010:8000"
     healthcheck:
