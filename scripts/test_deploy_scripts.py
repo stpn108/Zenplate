@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""Tests for redeploy.sh's terminal detach (T-011), .env guard (T-012), --no-cache (T-013) and four test
-workers (T-014), and merge-to-main.sh's guards (T-010).
+"""Tests for redeploy.sh's terminal detach (T-011), .env guard (T-012), --no-cache (T-013), four test
+workers (T-014) and host log setup (T-015), and merge-to-main.sh's guards (T-010).
 
 The deploy scripts live outside app/, so the app-tests container and ci.yml cannot see them.
 Run on the host from the repo root (needs bash, git, flock, setsid, GNU tail):
 
     python3 scripts/test_deploy_scripts.py
 
-redeploy.sh runs for real under a pseudo-terminal, with a fake `docker` on PATH; Ctrl-C is
+redeploy.sh runs for real under a pseudo-terminal, with a fake `docker` and `sudo` on PATH; Ctrl-C is
 sent as the terminal's ^C. merge-to-main.sh runs against throwaway git repos with a local origin.
 Exit code 0 = all checks passed.
 """
@@ -54,9 +54,21 @@ fi
 exit 0
 """
 
+# Stands in for `sudo`: `sudo -n true` fails when FAKE_SUDO_PASSWORD is set (a password would be asked).
+# Other calls are appended to FAKE_COMPOSE_LOG as "sudo …" and not run; an `install -m 0644 SRC DEST`
+# copies SRC to FAKE_SUDO_COPY, so the rendered logrotate file can be checked.
+FAKE_SUDO = r"""#!/bin/bash
+if [ "$1" = "-n" ]; then [ -z "${FAKE_SUDO_PASSWORD:-}" ]; exit; fi
+[ -n "${FAKE_COMPOSE_LOG:-}" ] && echo "sudo $*" >> "$FAKE_COMPOSE_LOG"
+[ "$1 $2 $3" = "install -m 0644" ] && [ -n "${FAKE_SUDO_COPY:-}" ] && cp "$4" "$FAKE_SUDO_COPY"
+exit 0
+"""
+PROJECT = "zt-redeploy-test"
+DEPLOY_ENV = f"COMPOSE_PROJECT_NAME={PROJECT}\n"
+
 
 # A deploy .env as the guard (T-012) reads it: a comment, a CRLF line, quotes, `export`, an inline comment.
-GUARD_ENV = ("# staging\nZT_GUARD_PREFIX=9\r\nZT_GUARD_SECRET=\"s3cr3t\"\nexport ZT_GUARD_SINGLE='a b'\n"
+GUARD_ENV = (DEPLOY_ENV + "# staging\nZT_GUARD_PREFIX=9\r\nZT_GUARD_SECRET=\"s3cr3t\"\nexport ZT_GUARD_SINGLE='a b'\n"
              "ZT_GUARD_UNSET=x\nZT_GUARD_COMMENT=10                 # Host port prefix\n")
 REQUIREMENTS = "pytest\n"
 
@@ -68,6 +80,11 @@ def make_deploy_dir(base, tested_requirements=True):
     with open(os.path.join(REPO, "redeploy.sh")) as src, open(os.path.join(d, "redeploy.sh"), "w") as dst:
         dst.write(src.read())
     os.chmod(os.path.join(d, "redeploy.sh"), 0o755)
+    os.makedirs(os.path.join(d, "deploy"))
+    with open(os.path.join(REPO, "deploy", "logrotate.conf")) as src, \
+            open(os.path.join(d, "deploy", "logrotate.conf"), "w") as dst:
+        dst.write(src.read())
+    open(os.path.join(d, ".env"), "w").write(DEPLOY_ENV)
     open(os.path.join(d, "VERSION"), "w").write("1.0\n")
     os.makedirs(os.path.join(d, "app"))
     open(os.path.join(d, "app", "requirements.txt"), "w").write(REQUIREMENTS)
@@ -78,9 +95,10 @@ def make_deploy_dir(base, tested_requirements=True):
     git(d, "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-q", "--allow-empty", "-m", "deploy me")
     bindir = os.path.join(d, "fakebin")
     os.makedirs(bindir)
-    with open(os.path.join(bindir, "docker"), "w") as f:
-        f.write(FAKE_DOCKER)
-    os.chmod(os.path.join(bindir, "docker"), 0o755)
+    for name, body in [("docker", FAKE_DOCKER), ("sudo", FAKE_SUDO)]:
+        with open(os.path.join(bindir, name), "w") as f:
+            f.write(body)
+        os.chmod(os.path.join(bindir, name), 0o755)
     env = {"PATH": bindir + os.pathsep + os.environ["PATH"],
            "FAKE_COMMIT": git(d, "rev-parse", "--short", "HEAD").stdout.strip()}
     return d, env
@@ -147,9 +165,50 @@ def lock_free(d):
 
 
 def compose_calls(d, env, *args):
+    """Run inline; returns the docker compose calls and, as "sudo …", the sudo calls, in order."""
     calls = os.path.join(d, "compose-calls")
     p = run_inline(d, dict(env, FAKE_COMPOSE_LOG=calls), *args)
     return p, open(calls).read().splitlines() if os.path.exists(calls) else []
+
+
+def test_redeploy_host_logs(base):
+    user = subprocess.run(["id", "-un"], capture_output=True, text=True).stdout.strip()
+    make_dir = f"sudo install -d -m 0750 -o {user} -g adm /var/log/{PROJECT}"
+    install_conf = re.compile(rf"sudo install -m 0644 \S+ /etc/logrotate\.d/{PROJECT}")
+
+    d, env = make_deploy_dir(base)
+    copy = os.path.join(d, "logrotate-installed")
+    p, calls = compose_calls(d, dict(env, FAKE_SUDO_COPY=copy))
+    sudo = [c for c in calls if c.startswith("sudo")]
+    expected = open(os.path.join(REPO, "deploy", "logrotate.conf")).read() \
+        .replace("<NAME>", PROJECT).replace("<USER>", user)
+    check("redeploy: creates the log directory and installs logrotate before any container runs",
+          p.returncode == 0 and DONE in p.stdout and len(sudo) == 2 and sudo[0] == make_dir
+          and install_conf.fullmatch(sudo[1]) is not None and calls[:2] == sudo
+          and os.path.exists(copy) and open(copy).read() == expected, f"{p.returncode} {calls}")
+
+    d, env = make_deploy_dir(base)
+    p, calls = compose_calls(d, dict(env, FAKE_SUDO_PASSWORD="1"))
+    check("redeploy: sudo needs a password and no terminal: stops and names both commands",
+          p.returncode == 1 and calls == [] and make_dir in p.stderr
+          and f"sudo install -m 0644 /dev/stdin /etc/logrotate.d/{PROJECT}" in p.stderr,
+          f"{p.returncode} {calls} {p.stderr[-500:]}")
+
+    d, env = make_deploy_dir(base)
+    calls_file = os.path.join(d, "compose-calls")
+    code, out = run_tty(d, dict(env, FAKE_SUDO_PASSWORD="1", FAKE_COMPOSE_LOG=calls_file),
+                        action="ctrl-c", when="LOGLINE")
+    sudo = [c for c in open(calls_file).read().splitlines() if c.startswith("sudo")]
+    check("redeploy: from a terminal sudo may ask for the password; the detached run does not repeat it",
+          code == 0 and DONE in out and len(sudo) == 2 and sudo[0] == make_dir, f"{code} {sudo} {out[-400:]}")
+
+    for name, env_text in [("missing", "OTHER=1\n"), ("invalid", "COMPOSE_PROJECT_NAME=../etc\n")]:
+        d, env = make_deploy_dir(base)
+        open(os.path.join(d, ".env"), "w").write(env_text)
+        p, calls = compose_calls(d, env)
+        check(f"redeploy: COMPOSE_PROJECT_NAME {name} stops it before sudo and containers",
+              p.returncode == 1 and calls == [] and "COMPOSE_PROJECT_NAME is missing or invalid" in p.stderr,
+              f"{p.returncode} {calls} {p.stderr[-300:]}")
 
 
 DONE = "app is healthy."
@@ -334,6 +393,7 @@ if __name__ == "__main__":
         sys.exit(0)
     with tempfile.TemporaryDirectory() as base:
         test_redeploy(base)
+        test_redeploy_host_logs(base)
         test_merge_to_main(base)
     print("ALL PASS" if all(RESULTS) else "SOME FAILED")
     sys.exit(0 if all(RESULTS) else 1)

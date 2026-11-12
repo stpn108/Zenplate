@@ -50,6 +50,23 @@ log.error("Payment failed user_id=%s reason=%s", user_id, exc)
 ```
 
 - `setup_logging()` once in `main()`; per-module loggers everywhere else.
+- With `LOG_DIR` set (T-015), WARNING and above also go to `LOG_DIR/error.log`,
+  the `access` logger also to `LOG_DIR/access.log`. Stdout stays as it is.
+- Every HTTP app installs the access log middleware and switches off the
+  server's own access log, or every request appears twice. Run uvicorn with
+  `log_config=None` so its errors reach the root logger (and `error.log`):
+
+  ```python
+  from access_log import AccessLogMiddleware
+  app.add_middleware(AccessLogMiddleware)          # FastAPI / Starlette
+  uvicorn.run(app, host="0.0.0.0", port=8000, access_log=False, log_config=None)
+  # CLI: uvicorn webapp:app --no-access-log
+  ```
+
+  Health check paths in `ACCESS_LOG_SKIP` (default `/health,/healthz`) are
+  not logged. The middleware never logs the query string, the Referer's
+  query string and fragment, bodies, cookies or `Authorization`, and does
+  not change `request.client`.
 - Every log line carries the identifiers needed to find the case again
   (user id, request id, job name). "Something went wrong" is not a log line.
 - Levels: DEBUG detail, INFO operational events, WARNING recoverable,

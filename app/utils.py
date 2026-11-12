@@ -8,6 +8,7 @@ IMPORTANT (see CLAUDE.md):
 """
 import os
 import logging
+import logging.handlers
 import datetime as dt
 from dateutil import tz
 from typing import Optional
@@ -22,13 +23,46 @@ DEFAULT_TZ_NAME = "Europe/Berlin"
 # ---------------------------------------------------------
 # LOGGING
 # ---------------------------------------------------------
+LOG_FORMAT = "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+
+
 def setup_logging():
-    """Configure root logger from LOG_LEVEL env var. Call once at startup."""
+    """
+    Configure root logger from LOG_LEVEL env var. Call once at startup.
+
+    With LOG_DIR set (T-015), WARNING and above also go to LOG_DIR/error.log and the
+    "access" logger (access_log.AccessLogMiddleware) also to LOG_DIR/access.log. Both keep
+    going to stdout. WatchedFileHandler reopens a file after logrotate moved it.
+    A LOG_DIR that cannot be written only logs a warning; the app starts without the files.
+    """
     level = os.getenv("LOG_LEVEL", "INFO").upper()
     logging.basicConfig(
         level=getattr(logging, level, logging.INFO),
-        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+        format=LOG_FORMAT,
     )
+    access = logging.getLogger("access")
+    access.setLevel(logging.INFO)
+
+    log_dir = os.getenv("LOG_DIR")
+    if not log_dir:
+        return
+    handlers = []
+    try:
+        for name in ("error.log", "access.log"):
+            handlers.append(logging.handlers.WatchedFileHandler(os.path.join(log_dir, name), encoding="utf-8"))
+    except OSError as exc:
+        for handler in handlers:
+            handler.close()
+        logging.getLogger(__name__).warning(
+            "Log files disabled: cannot write to LOG_DIR=%s (%s). Logging to stdout only.", log_dir, exc
+        )
+        return
+    error_handler, access_handler = handlers
+    error_handler.setLevel(logging.WARNING)
+    error_handler.setFormatter(logging.Formatter(LOG_FORMAT))
+    access_handler.setFormatter(logging.Formatter("%(message)s"))
+    logging.getLogger().addHandler(error_handler)
+    access.addHandler(access_handler)
 
 
 # ---------------------------------------------------------

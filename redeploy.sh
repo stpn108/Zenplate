@@ -68,6 +68,55 @@ if [ -n "$ENV_OVERRIDES" ]; then
     exit 1
 fi
 
+# --- Web server logs on the host (T-015) ---
+# docker-compose.yml mounts /var/log/$COMPOSE_PROJECT_NAME into every HTTP service. The directory and
+# the logrotate file need root once; afterwards they are only compared and sudo is not called.
+# Runs before the detach, so from a terminal sudo can ask for the password; the detached child skips it.
+PROJECT_NAME=${COMPOSE_PROJECT_NAME:-$(grep -E '^COMPOSE_PROJECT_NAME=' .env 2>/dev/null | cut -d= -f2 | tr -d "[:space:]\"'")}
+if ! [[ "$PROJECT_NAME" =~ ^[a-z0-9][a-z0-9_-]*$ ]]; then
+    err "COMPOSE_PROJECT_NAME is missing or invalid in .env ('${PROJECT_NAME}'): lowercase letters, digits, '-' and '_' only."
+    err "It names the log directory /var/log/<COMPOSE_PROJECT_NAME>. Deployment aborted."
+    exit 1
+fi
+if [ -z "${REDEPLOY_DETACHED:-}" ]; then
+    HOST_LOG_DIR="/var/log/${PROJECT_NAME}"
+    LOGROTATE_FILE="/etc/logrotate.d/${PROJECT_NAME}"
+    LOG_USER=$(id -un)
+    LOGROTATE_RENDERED=$(mktemp)
+    trap 'rm -f "$LOGROTATE_RENDERED"' EXIT
+    sed -e "s/<NAME>/${PROJECT_NAME}/g" -e "s/<USER>/${LOG_USER}/g" deploy/logrotate.conf > "$LOGROTATE_RENDERED"
+    LOG_DIR_OK=0
+    [ "$(stat -c '%u:%G:%a' "$HOST_LOG_DIR" 2>/dev/null)" = "$(id -u):adm:750" ] && LOG_DIR_OK=1
+    LOGROTATE_OK=0
+    cmp -s "$LOGROTATE_RENDERED" "$LOGROTATE_FILE" && LOGROTATE_OK=1
+    if [ $LOG_DIR_OK -eq 0 ] || [ $LOGROTATE_OK -eq 0 ]; then
+        if ! sudo -n true 2>/dev/null && ! [ -t 0 ]; then
+            err "Setting up ${HOST_LOG_DIR} and ${LOGROTATE_FILE} needs sudo with a password, and there is no terminal."
+            err "Run these two commands once on the server in $(pwd), then deploy again:"
+            err "  sudo install -d -m 0750 -o ${LOG_USER} -g adm ${HOST_LOG_DIR}"
+            err "  sed -e 's/<NAME>/${PROJECT_NAME}/g' -e 's/<USER>/${LOG_USER}/g' deploy/logrotate.conf | sudo install -m 0644 /dev/stdin ${LOGROTATE_FILE}"
+            err "Deployment aborted. The running app is unchanged."
+            exit 1
+        fi
+        if [ $LOG_DIR_OK -eq 0 ]; then
+            log "Creating log directory ${HOST_LOG_DIR} (owner ${LOG_USER}, group adm, 0750)..."
+            if ! sudo install -d -m 0750 -o "$LOG_USER" -g adm "$HOST_LOG_DIR"; then
+                err "Cannot create ${HOST_LOG_DIR}. Deployment aborted. The running app is unchanged."
+                exit 1
+            fi
+        fi
+        if [ $LOGROTATE_OK -eq 0 ]; then
+            log "Installing ${LOGROTATE_FILE} (daily, 14 days)..."
+            if ! sudo install -m 0644 "$LOGROTATE_RENDERED" "$LOGROTATE_FILE"; then
+                err "Cannot install ${LOGROTATE_FILE}. Deployment aborted. The running app is unchanged."
+                exit 1
+            fi
+        fi
+    fi
+    rm -f "$LOGROTATE_RENDERED"
+    trap - EXIT
+fi
+
 # --- Detach from the terminal (T-011) ---
 # Started from an SSH session, the script re-runs itself in its own session under nohup, writes to
 # LOG_FILE and only follows that log here. A dropped SSH connection (SIGHUP) kills the log viewer, not
@@ -191,8 +240,6 @@ docker compose rm -f app
 
 # 4. Check for orphaned containers
 log "4. Checking for orphaned containers..."
-PROJECT_NAME=$(grep -E '^COMPOSE_PROJECT_NAME=' .env 2>/dev/null | cut -d= -f2 | tr -d '[:space:]')
-PROJECT_NAME=${PROJECT_NAME:-$(basename "$(pwd)" | tr '[:upper:]' '[:lower:]')}
 ORPHANS=$(docker ps -aq \
   --filter "label=com.docker.compose.project=${PROJECT_NAME}" \
   --filter "label=com.docker.compose.service=app")

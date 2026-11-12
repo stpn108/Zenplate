@@ -77,11 +77,28 @@ GitHub Actions:  comment on the merged PR: ✅ Deployed vX.Y / ❌ failed + log 
 
 | Script | Purpose |
 |--------|---------|
-| `redeploy.sh` | Tests → build → deploy → verify. Aborts on first failure. From a terminal it runs detached, log in `redeploy.log` (T-011); refuses shell overrides of `.env` (T-012); `--no-cache` rebuilds the images without the build cache (T-013) |
+| `redeploy.sh` | Tests → build → deploy → verify. Aborts on first failure. From a terminal it runs detached, log in `redeploy.log` (T-011); refuses shell overrides of `.env` (T-012); `--no-cache` rebuilds the images without the build cache (T-013); sets up `/var/log/<COMPOSE_PROJECT_NAME>` and its logrotate file (T-015) |
 | `merge-to-main.sh` | Terminal alternative to the Merge button (`developer` mode); never leaves a half merge (T-010) |
 | `scripts/test_deploy_scripts.py` | Tests for both scripts. Run on the host, not in a container: `python3 scripts/test_deploy_scripts.py` |
 | `version.sh` | Repo version vs. running container |
 | `scripts/db-backup.sh` | pg_dump + retention, run by the `db-backup` service |
+
+## Web server logs on the host (T-015)
+
+**Rule for every project: every HTTP service writes `access.log` and
+`error.log` to `/var/log/<COMPOSE_PROJECT_NAME>` via `LOG_DIR` and
+`AccessLogMiddleware`; logs stay on stdout too.**
+
+- Compose, per HTTP service: volume `/var/log/${COMPOSE_PROJECT_NAME:?}:/var/log/app`
+  and `LOG_DIR: /var/log/app`. A second HTTP service gets the same two lines
+  and writes into the same two files; `SERVICE_NAME` tells them apart (`svc=`).
+- The app installs `AccessLogMiddleware` (`app/access_log.py`) and calls
+  `setup_logging()`. Details: `.claude/code-patterns.md` → Logging.
+- `redeploy.sh` creates the directory and `/etc/logrotate.d/<COMPOSE_PROJECT_NAME>`
+  (from `deploy/logrotate.conf`, daily, 14 days). It needs sudo only when one
+  of them is missing or different. Never touch other paths under `/var/log` or `/etc`.
+- Never log the query string (of the path or the Referer), the Referer's
+  fragment, bodies, cookies or `Authorization`.
 
 ## Network & security posture
 

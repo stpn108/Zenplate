@@ -43,12 +43,14 @@ app/                    # Main code
 ├── database.py        # SQLAlchemy models + MIGRATIONS runner
 ├── healthcheck.py     # Docker health probe
 ├── utils.py           # Timezone, datetime, logging helpers
+├── access_log.py      # ASGI access log middleware (T-015)
 ├── strings.py         # i18n (DE/EN)
 ├── tests/             # pytest tests (incl. import smoke, migrations, healthcheck)
 ├── templates/         # Jinja2 templates
 ├── .dockerignore      # Keeps tests and tooling out of the image
 └── Dockerfile         # COPY *.py — no per-file lines
 scripts/db-backup.sh    # pg_dump + retention, run by the db-backup service
+deploy/logrotate.conf   # Host log rotation template, installed by redeploy.sh (T-015)
 .github/workflows/
 ├── ci.yml             # Tests on every non-main push and PR (feedback)
 ├── deploy.yml         # Self-hosted runner: pull main, ./redeploy.sh (the gate)
@@ -79,8 +81,9 @@ scripts/db-backup.sh    # pg_dump + retention, run by the db-backup service
 
 See `.env.example`. Required: `POSTGRES_DB`, `POSTGRES_USER`,
 `POSTGRES_PASSWORD`, `DATABASE_URL`. Optional: `TZ`, `LOG_LEVEL`,
-`PORTS_PREFIX`, `COMPOSE_PROJECT_NAME`, `BACKUP_INTERVAL`,
-`BACKUP_RETENTION_DAYS`.
+`PORTS_PREFIX`, `BACKUP_INTERVAL`, `BACKUP_RETENTION_DAYS`.
+`COMPOSE_PROJECT_NAME` is required: it names the deployment and its log
+directory. Staging and production need different values.
 
 ---
 
@@ -109,6 +112,18 @@ docker compose logs -f app         # logs
 docker compose ps                  # health of all services
 ls -lh volumes/backups/            # database backups
 ```
+
+### Web server logs
+
+Every HTTP service writes `access.log` (one line per request, path and
+Referer without query string) and `error.log` (warnings and errors) to
+`/var/log/<COMPOSE_PROJECT_NAME>/` on the host. The same lines still go to
+stdout (`docker compose logs`, Loki/Grafana). logrotate rotates them daily
+and keeps 14 days (`deploy/logrotate.conf`). `./redeploy.sh` creates the
+directory and `/etc/logrotate.d/<COMPOSE_PROJECT_NAME>` with sudo, only when
+missing or different. If sudo needs a password, run `./redeploy.sh` once
+from a terminal. Health checks (`ACCESS_LOG_SKIP`, default `/health,/healthz`)
+are not logged. Details: T-015 in `.claude/template-decisions.md`.
 
 ---
 
